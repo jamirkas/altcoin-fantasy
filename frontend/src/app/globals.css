@@ -1,26 +1,181 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --matrix-green: #00FF41;
+  --matrix-green-dim: #0A3D0A;
+  --matrix-bg: #0A0A0A;
+  --matrix-surface: #0D0D0D;
+  --matrix-border: #1A3A1A;
+  --matrix-text: #B3FFB3;
+  --matrix-muted: #4D804D;
+  --matrix-error: #FF1A40;
+  --matrix-gold: #FFD700;
+  --matrix-warn: #FF8C00;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--matrix-bg);
+  --color-foreground: var(--matrix-text);
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Share Tech Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--matrix-border) var(--matrix-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--matrix-bg);
+  color: var(--matrix-text);
+  font-family: 'JetBrains Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* ─── Scanlines Overlay ─── */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.02) 2px,
+    rgba(0, 255, 65, 0.02) 4px
+  );
+}
+
+/* ─── Glitch Text ─── */
+.glitch {
+  position: relative;
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.6);
+}
+.glitch:hover {
+  animation: glitch-skew 0.4s ease-in-out infinite alternate;
+}
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); text-shadow: 1px 0 var(--matrix-error), -1px 0 rgba(0,255,65,0.5); }
+  50% { transform: skew(1deg); text-shadow: -1px 0 var(--matrix-error), 1px 0 rgba(0,255,65,0.5); }
+  100% { transform: skew(-1deg, 0.5deg); text-shadow: 0.5px -0.5px var(--matrix-error), -0.5px 0.5px rgba(0,255,65,0.5); }
+}
+
+/* ─── Neon Glow ─── */
+.neon-box {
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.15), inset 0 0 5px rgba(0, 255, 65, 0.05);
+}
+.neon-box:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+}
+.neon-box-red {
+  box-shadow: 0 0 10px rgba(255, 26, 64, 0.15), inset 0 0 5px rgba(255, 26, 64, 0.05);
+}
+.neon-box-gold {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2), inset 0 0 8px rgba(255, 215, 0, 0.08);
+}
+
+/* ─── Pulse Animation ─── */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(0, 255, 65, 0.5); }
+}
+.neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Code Rain chars (inherited) ─── */
+.matrix-text {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--matrix-green);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+}
+
+/* ─── Futuristic corners ─── */
+.cyber-border {
+  position: relative;
+  border: 1px solid var(--matrix-border);
+  clip-path: polygon(
+    8px 0, calc(100% - 8px) 0,
+    100% 8px, 100% calc(100% - 8px),
+    calc(100% - 8px) 100%, 8px 100%,
+    0 calc(100% - 8px), 0 8px
+  );
+}
+
+/* ─── Button styles ─── */
+.btn-neon {
+  font-family: 'Share Tech Mono', monospace;
+  position: relative;
+  border: 1px solid var(--matrix-green);
+  color: var(--matrix-green);
+  background: rgba(0, 255, 65, 0.05);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+}
+.btn-neon::before {
+  content: '[ ';
+}
+.btn-neon::after {
+  content: ' ]';
+}
+.btn-neon:hover:not(:disabled) {
+  background: rgba(0, 255, 65, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+  cursor: pointer;
+}
+.btn-neon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  border-color: var(--matrix-error);
+  color: var(--matrix-error);
+  background: rgba(255, 26, 64, 0.05);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(255, 26, 64, 0.15);
+  box-shadow: 0 0 20px rgba(255, 26, 64, 0.4);
+}
+
+/* ─── Progress Bar ─── */
+.progress-bar {
+  height: 4px;
+  background: var(--matrix-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--matrix-green);
+  border-radius: 2px;
+  transition: width 1s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+}
+
+/* ─── Number ticker ─── */
+@keyframes ticker-up {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.ticker-up {
+  animation: ticker-up 0.3s ease-out;
+}
+
+/* ─── Loading spinner (Matrix) ─── */
+@keyframes matrix-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.matrix-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--matrix-border);
+  border-top-color: var(--matrix-green);
+  border-radius: 50%;
+  animation: matrix-spin 0.8s linear infinite;
 }
