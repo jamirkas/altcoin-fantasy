@@ -16,7 +16,7 @@ const CONTRACT_ABI = [
 
 // ─── Config ───
 const CONTRACT_ADDRESS = '0xaeE2CD3A9681031529DaEfda5732E3aBa1C26E3B';
-const API_URL = 'https://f7113cb757221e.lhr.life';
+const API_URL = 'https://e1fda3630940a9.lhr.life';
 const TOURNAMENT_ID = 1;
 
 // ─── Types ───
