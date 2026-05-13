@@ -243,7 +243,7 @@ async def submit_draft(req: DraftRequest):
         raise HTTPException(400, "Tournament finalized")
 
     # Validate picks
-    if len(req.picks) < 3 or len(req.picks) > 10:
+    if len(req.picks) != 3:
         conn.close()
         raise HTTPException(400, "Pick 3-10 tokens")
 

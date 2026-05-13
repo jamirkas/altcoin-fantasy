@@ -16,8 +16,8 @@ const CONTRACT_ABI = [
 
 // ─── Config ───
 const CONTRACT_ADDRESS = '0xaeE2CD3A9681031529DaEfda5732E3aBa1C26E3B';
-const API_URL = 'https://e1fda3630940a9.lhr.life';
-const TOURNAMENT_ID = 1;
+const API_URL = 'https://1e04aee04c3698.lhr.life';
+const TOURNAMENT_ID = 0;
 
 // ─── Types ───
 interface Token {
@@ -101,7 +101,8 @@ export default function Home() {
     const next = new Map(selectedTokens);
     if (next.get(symbol) === direction) {
       next.delete(symbol); // deselect
-    } else {
+    } else if (next.size < 3 || next.has(symbol)) {
+      // Allow selection only if under limit OR changing direction of existing pick
       next.set(symbol, direction);
     }
     setSelectedTokens(next);
@@ -114,7 +115,7 @@ export default function Home() {
       symbol,
       direction,
     }));
-    if (picks.length < 3) return setMessage('Pick at least 3 tokens');
+    if (picks.length !== 3) return setMessage('Select exactly 3 tokens');
 
     setLoading(true);
     try {
@@ -191,7 +192,7 @@ export default function Home() {
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Pick Your Team</h2>
             <span className="text-sm text-gray-500">
-              {selectedTokens.size} / 10 selected
+              {selectedTokens.size} / 3 selected
             </span>
           </div>
 
