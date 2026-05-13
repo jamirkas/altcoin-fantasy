@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[64381,["/altcoin-fantasy/_next/static/chunks/0x4.pfi0s9xzn.js"],"ViewportBoundary"]
+3:I[64381,["/altcoin-fantasy/_next/static/chunks/0x4.pfi0s9xzn.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+5:I[12843,["/altcoin-fantasy/_next/static/chunks/0x4.pfi0s9xzn.js"],"IconMark"]
+0:{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Altcoin Fantasy — Beat the Benchmark"}],["$","meta","1",{"name":"description","content":"Weekly crypto fantasy league. Draft altcoins, beat Bitcoin, win prizes."}],["$","link","2",{"rel":"icon","href":"/altcoin-fantasy/favicon.ico?favicon.0x3dzn~oxb6tn.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L5","3",{}]]}]}]}],null]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ThQPIAh7P2ZrY-SVeCjva"}
