@@ -1,10 +1,35 @@
 {
-  "address": "0xaeE2CD3A9681031529DaEfda5732E3aBa1C26E3B",
+  "address": "0x6D615aFa82869065D299F23e25Ca00Eb8c6DaE05",
   "abi": [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tournamentId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "pickIndex",
+          "type": "uint8"
+        }
+      ],
+      "name": "CaptainSet",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -35,6 +60,25 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "string",
+          "name": "param",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "ConfigUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "uint256",
           "name": "tournamentId",
@@ -45,6 +89,18 @@
           "internalType": "address",
           "name": "player",
           "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "referrer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "captainIndex",
+          "type": "uint8"
         },
         {
           "indexed": false,
@@ -60,6 +116,38 @@
         }
       ],
       "name": "Entered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "paused",
+          "type": "bool"
+        }
+      ],
+      "name": "PauseToggled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "referrer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "ReferralWithdrawn",
       "type": "event"
     },
     {
@@ -111,6 +199,43 @@
       ],
       "name": "TournamentCreated",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "captainMultiplier",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "captainPicks",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -194,6 +319,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "defaultEntryFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -202,6 +340,29 @@
         }
       ],
       "name": "enter",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tournamentId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_referrer",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "_captainIndex",
+          "type": "uint8"
+        }
+      ],
+      "name": "enterWithReferral",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function"
@@ -256,24 +417,13 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_tournamentId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_player",
-          "type": "address"
-        }
-      ],
-      "name": "hasEntered",
+      "inputs": [],
+      "name": "maxEntriesPerPlayer",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "uint256",
           "name": "",
-          "type": "bool"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -293,6 +443,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -306,6 +469,121 @@
         }
       ],
       "name": "postResults",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "referralBalances",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "referralPercent",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tournamentId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "_pickIndex",
+          "type": "uint8"
+        }
+      ],
+      "name": "setCaptain",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_mult",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCaptainMultiplier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_wei",
+          "type": "uint256"
+        }
+      ],
+      "name": "setDefaultEntryFee",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_max",
+          "type": "uint256"
+        }
+      ],
+      "name": "setMaxEntriesPerPlayer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "_paused",
+          "type": "bool"
+        }
+      ],
+      "name": "setPaused",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_bps",
+          "type": "uint256"
+        }
+      ],
+      "name": "setReferralPercent",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -386,6 +664,13 @@
         }
       ],
       "name": "withdrawProtocolFee",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "withdrawReferral",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

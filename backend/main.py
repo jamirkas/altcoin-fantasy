@@ -1,5 +1,6 @@
 """
 Backend: Binance price oracle + draft storage + scoring + Merkle tree
+v2: Captain boost (2x weight on selected pick)
 """
 import os
 import json
@@ -26,6 +27,7 @@ TOKENS = [
 ]
 
 BENCHMARK = "BTC"
+CAPTAIN_MULTIPLIER = 2  # Matches contract's captainMultiplier
 
 # ─── DB Init ───
 def init_db():
@@ -36,6 +38,7 @@ def init_db():
             tournament_id INTEGER NOT NULL,
             player TEXT NOT NULL,
             picks TEXT NOT NULL,       -- JSON: [{"symbol":"ETH","direction":"LONG"},...]
+            captain_index INTEGER DEFAULT 0,  -- which pick (0-2) is captain
             submitted_at TEXT NOT NULL,
             UNIQUE(tournament_id, player)
         )
@@ -61,6 +64,11 @@ def init_db():
             PRIMARY KEY (tournament_id, player)
         )
     """)
+    # Migration: add captain_index if upgrading from v1
+    try:
+        conn.execute("ALTER TABLE drafts ADD COLUMN captain_index INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     conn.commit()
     conn.close()
 
@@ -75,6 +83,7 @@ class DraftRequest(BaseModel):
     tournament_id: int
     player: str       # wallet address
     picks: list[DraftPick]
+    captain_index: int = 0  # 0, 1, or 2
 
 class TournamentCreate(BaseModel):
     entry_fee_wei: int
@@ -113,8 +122,8 @@ async def get_historical_prices(
                 params = {
                     "symbol": f"{sym}USDT",
                     "interval": "1m",
-                    "startTime": timestamp_ms - 60000,  # 1 min before
-                    "endTime": timestamp_ms + 60000,    # 1 min after
+                    "startTime": timestamp_ms - 60000,
+                    "endTime": timestamp_ms + 60000,
                     "limit": 1
                 }
                 resp = await client.get(url, params=params)
@@ -126,22 +135,30 @@ async def get_historical_prices(
     return prices
 
 
-# ─── Scoring ───
+# ─── Scoring (with Captain Boost) ───
 
 async def calculate_scores(
-    picks: list[dict], start_prices: dict, end_prices: dict
+    picks: list[dict], start_prices: dict, end_prices: dict,
+    captain_index: int = 0
 ) -> float:
     """
-    Score = average outperformance vs BENCHMARK.
+    Score = weighted average outperformance vs BENCHMARK.
+    Captain pick gets CAPTAIN_MULTIPLIER (2x) weight.
     Each pick: LONG → +growth%, SHORT → -growth%
-    Final score = avg(pick_scores) - benchmark_growth
+    
+    With 3 picks and captain at index i:
+      weight_per_pick = [1, 1, 1], but captain gets 2
+      total_weight = 1+1+2 = 4
+      weighted_score = sum(score[i] * weight[i]) / total_weight
+      final = weighted_score - benchmark_growth
     """
     benchmark_growth = 0.0
     if BENCHMARK in start_prices and BENCHMARK in end_prices:
         benchmark_growth = (end_prices[BENCHMARK] - start_prices[BENCHMARK]) / start_prices[BENCHMARK] * 100
 
     scores = []
-    for pick in picks:
+    weights = []
+    for i, pick in enumerate(picks):
         sym = pick["symbol"]
         direction = pick["direction"]
         if sym not in start_prices or sym not in end_prices:
@@ -149,13 +166,16 @@ async def calculate_scores(
         growth = (end_prices[sym] - start_prices[sym]) / start_prices[sym] * 100
         if direction == "SHORT":
             growth = -growth
-        scores.append(growth)
+        
+        weight = CAPTAIN_MULTIPLIER if i == captain_index else 1
+        scores.append(growth * weight)
+        weights.append(weight)
 
-    if not scores:
+    if not scores or sum(weights) == 0:
         return 0.0
 
-    avg_score = sum(scores) / len(scores)
-    return avg_score - benchmark_growth
+    weighted_avg = sum(scores) / sum(weights)
+    return weighted_avg - benchmark_growth
 
 
 # ─── Merkle Tree ───
@@ -175,7 +195,6 @@ def build_merkle_tree(winners: list[tuple[str, int]]) -> tuple[bytes, dict]:
         ).digest()
         leaves.append(leaf)
 
-    # Build tree
     tree = [leaves]
     while len(tree[-1]) > 1:
         level = tree[-1]
@@ -189,14 +208,13 @@ def build_merkle_tree(winners: list[tuple[str, int]]) -> tuple[bytes, dict]:
 
     root = tree[-1][0] if tree[-1] else bytes(32)
 
-    # Generate proofs
     proofs = {}
     for idx, (addr, amount) in enumerate(winners):
         proof = []
         current_idx = idx
         for level_idx in range(len(tree) - 1):
             level = tree[level_idx]
-            pair_idx = current_idx ^ 1  # sibling
+            pair_idx = current_idx ^ 1
             if pair_idx < len(level):
                 proof.append(level[pair_idx])
             current_idx //= 2
@@ -215,13 +233,14 @@ async def get_tokens():
         "tokens": TOKENS,
         "benchmark": BENCHMARK,
         "prices": prices,
+        "captain_multiplier": CAPTAIN_MULTIPLIER,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
 
 
 @app.post("/draft")
 async def submit_draft(req: DraftRequest):
-    """Submit picks for a tournament"""
+    """Submit picks for a tournament (with captain)"""
     conn = sqlite3.connect(DB)
 
     # Check tournament exists & draft is open
@@ -245,7 +264,11 @@ async def submit_draft(req: DraftRequest):
     # Validate picks
     if len(req.picks) != 3:
         conn.close()
-        raise HTTPException(400, "Pick 3-10 tokens")
+        raise HTTPException(400, "Must pick exactly 3 tokens")
+
+    if req.captain_index < 0 or req.captain_index > 2:
+        conn.close()
+        raise HTTPException(400, "Captain index must be 0-2")
 
     for pick in req.picks:
         if pick.symbol not in TOKENS:
@@ -259,18 +282,18 @@ async def submit_draft(req: DraftRequest):
 
     # Upsert
     conn.execute("""
-        INSERT OR REPLACE INTO drafts (tournament_id, player, picks, submitted_at)
-        VALUES (?, ?, ?, ?)
-    """, (req.tournament_id, req.player.lower(), picks_json, datetime.now(timezone.utc).isoformat()))
+        INSERT OR REPLACE INTO drafts (tournament_id, player, picks, captain_index, submitted_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (req.tournament_id, req.player.lower(), picks_json, req.captain_index, datetime.now(timezone.utc).isoformat()))
 
     conn.commit()
     conn.close()
-    return {"status": "ok", "message": "Draft submitted"}
+    return {"status": "ok", "message": "Draft submitted", "captain_index": req.captain_index}
 
 
 @app.get("/leaderboard/{tournament_id}")
 async def get_leaderboard(tournament_id: int):
-    """Get current leaderboard (only works if tournament has ended)"""
+    """Get current leaderboard with captain-adjusted scores"""
     conn = sqlite3.connect(DB)
     tour = conn.execute(
         "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
@@ -280,24 +303,22 @@ async def get_leaderboard(tournament_id: int):
         raise HTTPException(404, "Tournament not found")
 
     drafts = conn.execute(
-        "SELECT player, picks, submitted_at FROM drafts WHERE tournament_id = ?",
+        "SELECT player, picks, captain_index, submitted_at FROM drafts WHERE tournament_id = ?",
         (tournament_id,)
     ).fetchall()
     conn.close()
 
-    # Get prices at start and end
-    # For MVP: use current prices mock — in production, store historical prices
     current_prices = await get_prices()
 
     leaderboard = []
-    for player, picks_json, submitted_at in drafts:
+    for player, picks_json, captain_index, submitted_at in drafts:
         picks = json.loads(picks_json)
-        # Mock: use same prices for start/end (in prod we'd use historical)
-        score = await calculate_scores(picks, current_prices, current_prices)
+        score = await calculate_scores(picks, current_prices, current_prices, captain_index or 0)
         leaderboard.append({
             "player": player,
             "score": round(score, 2),
-            "picks": picks
+            "picks": picks,
+            "captain_index": captain_index or 0
         })
 
     leaderboard.sort(key=lambda x: x["score"], reverse=True)
@@ -305,7 +326,7 @@ async def get_leaderboard(tournament_id: int):
     return {
         "tournament_id": tournament_id,
         "players": len(leaderboard),
-        "leaderboard": leaderboard[:50]  # top 50
+        "leaderboard": leaderboard[:50]
     }
 
 
@@ -328,7 +349,7 @@ async def create_tournament(req: TournamentCreate):
 
 @app.post("/finalize/{tournament_id}")
 async def finalize_tournament(tournament_id: int):
-    """Calculate results and generate Merkle tree"""
+    """Calculate results with captain boost and generate Merkle tree"""
     conn = sqlite3.connect(DB)
     tour = conn.execute(
         "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
@@ -338,26 +359,22 @@ async def finalize_tournament(tournament_id: int):
         raise HTTPException(404, "Tournament not found")
 
     drafts = conn.execute(
-        "SELECT player, picks FROM drafts WHERE tournament_id = ?",
+        "SELECT player, picks, captain_index FROM drafts WHERE tournament_id = ?",
         (tournament_id,)
     ).fetchall()
 
-    # Use current prices (MVP — in prod, store historical)
     prices = await get_prices()
 
-    # Calculate scores
     results = []
-    for player, picks_json in drafts:
+    for player, picks_json, captain_index in drafts:
         picks = json.loads(picks_json)
-        score = await calculate_scores(picks, prices, prices)
+        score = await calculate_scores(picks, prices, prices, captain_index or 0)
         results.append((player, score))
 
-    # Sort by score descending
     results.sort(key=lambda x: x[1], reverse=True)
 
-    # Top 10% get prizes
     prize_count = max(1, len(results) // 10)
-    total_pool = tour[6] or 1000000000000000000  # default 1 ETH for MVP
+    total_pool = tour[6] or 1000000000000000000
     prize_per_winner = total_pool // prize_count
 
     winners = []
@@ -366,11 +383,9 @@ async def finalize_tournament(tournament_id: int):
             amount = int(prize_per_winner)
             winners.append((player, amount))
 
-    # Build Merkle tree
     root_bytes, proofs = build_merkle_tree(winners)
     merkle_root = "0x" + root_bytes.hex()
 
-    # Store
     for player, amount in winners:
         proof_hex = ["0x" + p.hex() for p in proofs.get(player, [])]
         conn.execute("""
@@ -399,7 +414,8 @@ async def health():
     return {
         "status": "ok",
         "tokens_tracked": len(prices),
-        "benchmark": BENCHMARK
+        "benchmark": BENCHMARK,
+        "captain_multiplier": CAPTAIN_MULTIPLIER
     }
 
 
