@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import HudFrame from '@/components/HudFrame';
+import MechArt from '@/components/MechArt';
 
 // ─── Token definitions for the garage ───
 interface TokenDef {
@@ -281,66 +282,25 @@ export default function Garage() {
   );
 }
 
-// ─── CSS Mech Preview ───
+// ─── CSS Mech Preview (neon robots) ───
 function MechPreview({ head, armor, weapon, secondary, legs, wings }: {
   head: TokenDef; armor: TokenDef; weapon: TokenDef; secondary: TokenDef; legs: TokenDef; wings: TokenDef;
 }) {
-  // Main body = armor token image, with part glow overlays
   const parts = [
-    { token: head, label: 'HEAD', top: '0%', left: '50%' },
-    { token: armor, label: 'ARMOR', top: '35%', left: '50%' },
-    { token: weapon, label: 'WEAPON', top: '40%', left: '10%' },
-    { token: secondary, label: 'SEC', top: '40%', left: '90%' },
-    { token: legs, label: 'LEGS', top: '82%', left: '50%' },
-    { token: wings, label: 'WINGS', top: '20%', left: '50%' },
+    { token: head, slot: 'head' },
+    { token: armor, slot: 'armor' },
+    { token: weapon, slot: 'weapon' },
+    { token: secondary, slot: 'secondary' },
+    { token: legs, slot: 'legs' },
+    { token: wings, slot: 'wings' },
   ];
 
   return (
-    <div className="relative w-full max-w-xs mx-auto">
-      {/* Main mech image */}
-      <div className="relative rounded-xl overflow-hidden border" style={{ borderColor: armor.color + '40' }}>
-        <img
-          src={`/mechs/mech_${armor.id.toUpperCase()}.png`}
-          alt={`${armor.name} mech`}
-          className="w-full h-auto object-contain"
-          style={{
-            filter: `drop-shadow(0 0 30px ${armor.glowColor}40) drop-shadow(0 0 60px ${armor.glowColor}20)`,
-          }}
-          onError={(e) => {
-            // Fallback to any available mech image
-            const t = e.currentTarget;
-            const fallbacks = ['ETH', 'SOL', 'LINK', 'AVAX'];
-            const current = t.src.match(/mech_(\w+)\.png/)?.[1];
-            const idx = fallbacks.indexOf(current || '');
-            if (idx >= 0 && idx < fallbacks.length - 1) {
-              t.src = `/mechs/mech_${fallbacks[idx + 1]}.png`;
-            }
-          }}
-        />
-        {/* Glow frame */}
-        <div className="absolute inset-0 rounded-xl pointer-events-none"
-          style={{ boxShadow: `inset 0 0 40px ${armor.color}15, inset 0 0 80px ${armor.color}08` }}
-        />
-      </div>
-
-      {/* Part indicators */}
-      {parts.map(({ token, label, top, left }) => (
-        <div
-          key={label}
-          className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 z-10"
-          style={{ top, left }}
-        >
-          <div className="w-2 h-2 rounded-full animate-pulse"
-            style={{ backgroundColor: token.color, boxShadow: `0 0 8px ${token.glowColor}` }}
-          />
-          <span className="text-[8px] font-mono tracking-wider" style={{ color: token.glowColor }}>
-            {token.symbol}
-          </span>
-        </div>
-      ))}
+    <div className="relative w-full max-w-xs mx-auto flex flex-col items-center">
+      <MechArt parts={parts} />
 
       {/* Part legend */}
-      <div className="flex flex-wrap gap-1.5 justify-center mt-3">
+      <div className="flex flex-wrap gap-1.5 justify-center mt-2">
         {[
           { token: head, label: 'HD' },
           { token: armor, label: 'AR' },
