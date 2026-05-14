@@ -1,83 +1,52 @@
 'use client';
-import { ethers } from 'ethers';
+import { useWallet } from '@/components/WalletContext';
 
-const BASE_SEPOLIA_CHAIN_ID = 84532;
-const BASE_SEPOLIA_CHAIN_ID_HEX = '0x14a34';
-const BASE_SEPOLIA = {
-  chainId: BASE_SEPOLIA_CHAIN_ID_HEX,
-  chainName: 'Base Sepolia',
-  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-  rpcUrls: ['https://sepolia.base.org'],
-  blockExplorerUrls: ['https://sepolia.basescan.org'],
-};
-
-interface Props {
-  account: string;
-  chainId: number | null;
-  provider: ethers.BrowserProvider | null;
-  onConnect: (account: string, chainId: number, provider: ethers.BrowserProvider) => void;
-  onError: (msg: string) => void;
-}
-
-export default function WalletButton({ account, chainId, provider, onConnect, onError }: Props) {
-  const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
-
-  const connect = async () => {
-    const w = (window as any).ethereum;
-    if (typeof window === 'undefined' || !w) {
-      onError('Install MetaMask or Rabby');
-      return;
-    }
-    try {
-      const prov = new ethers.BrowserProvider(w);
-      const accounts = await prov.send('eth_requestAccounts', []);
-      const net = await prov.getNetwork();
-      const numericChainId = Number(net.chainId);
-
-      // Switch to Base Sepolia if not already there
-      if (numericChainId !== BASE_SEPOLIA_CHAIN_ID) {
-        try {
-          await w.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID_HEX }] });
-        } catch (switchErr: any) {
-          // If chain not in wallet, add it
-          if (switchErr.code === 4902) {
-            await w.request({ method: 'wallet_addEthereumChain', params: [BASE_SEPOLIA] });
-          } else {
-            throw switchErr;
-          }
-        }
-        // Use FRESH provider after switch — old one caches network
-        const freshProv = new ethers.BrowserProvider(w);
-        const newNet = await freshProv.getNetwork();
-        onConnect(accounts[0], Number(newNet.chainId), freshProv);
-      } else {
-        onConnect(accounts[0], numericChainId, prov);
-      }
-
-      // Listen for network/account changes
-      w.on('chainChanged', () => window.location.reload());
-      w.on('accountsChanged', () => window.location.reload());
-    } catch (e: any) {
-      onError(e.message || 'Wallet connection failed');
-    }
-  };
+export default function WalletButton() {
+  const { account, isCorrectChain, connecting, connect } = useWallet();
 
   return (
     <div className="flex flex-col items-center gap-1">
       <button
         onClick={connect}
-        className={`px-4 py-2 rounded font-mono text-sm tracking-wider transition-all ${
-          account && isCorrectChain
-            ? 'border border-[#00FF41] text-[#00FF41] bg-[#0A1A0A]'
+        disabled={connecting}
+        className={`
+          relative px-5 py-2.5 rounded font-mono text-sm tracking-[0.12em] uppercase
+          transition-all duration-300 overflow-hidden
+          ${account && isCorrectChain
+            ? 'border border-[#00FF41]/50 text-[#00FF41] bg-[#0A1A0A]/60 hover:bg-[#0A1A0A]/80 hover:shadow-[0_0_20px_rgba(0,255,65,0.3)]'
             : account && !isCorrectChain
-            ? 'border border-[#FF1A40] text-[#FF1A40] bg-[#1A0A0A]'
-            : 'btn-neon px-6'
-        }`}
+            ? 'border border-[#FF1A40]/50 text-[#FF1A40] bg-[#1A0A0A]/60 animate-pulse'
+            : 'btn-neon futuristic-btn'
+          }
+        `}
       >
-        {account
-          ? `${account.slice(0, 6)}...${account.slice(-4)}`
-          : '[ CONNECT ]'}
+        {/* Scanning line effect */}
+        {!account && (
+          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00FF41]/10 to-transparent -translate-x-full animate-scan" />
+        )}
+
+        {/* Power indicator */}
+        <span className="flex items-center gap-2 relative z-10">
+          {connecting ? (
+            <>
+              <span className="matrix-spinner w-3.5 h-3.5" />
+              CONNECTING...
+            </>
+          ) : account ? (
+            <>
+              <span className={`w-1.5 h-1.5 rounded-full ${isCorrectChain ? 'bg-[#00FF41] shadow-[0_0_6px_#00FF41]' : 'bg-[#FF1A40] shadow-[0_0_6px_#FF1A40]'}`} />
+              {account.slice(0, 6)}...{account.slice(-4)}
+            </>
+          ) : (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4D754D]" />
+              CONNECT WALLET
+            </>
+          )}
+        </span>
       </button>
+
+      {/* Status indicator */}
       {account && !isCorrectChain && (
         <span className="text-[10px] text-[#FF1A40] font-mono tracking-wider animate-pulse">
           ⚠ WRONG NETWORK — SWITCH TO BASE SEPOLIA

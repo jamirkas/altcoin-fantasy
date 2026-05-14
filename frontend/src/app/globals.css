@@ -487,3 +487,112 @@ body {
 .slot-reveal {
   animation: slot-reveal 0.4s ease-out;
 }
+
+/* ─── Scanning line ─── */
+@keyframes scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.animate-scan {
+  animation: scan 2.5s ease-in-out infinite;
+}
+
+/* ─── Futuristic button ─── */
+.futuristic-btn {
+  border-image: linear-gradient(
+    135deg,
+    var(--matrix-green),
+    var(--matrix-cyan),
+    var(--matrix-green)
+  ) 1;
+  box-shadow:
+    0 0 15px rgba(0, 255, 65, 0.15),
+    inset 0 0 15px rgba(0, 255, 65, 0.03);
+}
+.futuristic-btn:hover:not(:disabled) {
+  border-image: linear-gradient(
+    135deg,
+    var(--matrix-cyan),
+    var(--matrix-green),
+    var(--matrix-purple)
+  ) 1;
+  box-shadow:
+    0 0 30px rgba(0, 255, 65, 0.3),
+    0 0 60px rgba(0, 229, 255, 0.15),
+    inset 0 0 20px rgba(0, 255, 65, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ─── Hex background pattern ─── */
+.bg-hex {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='60' height='52' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 17.3v34.6L30 69.3 0 52V17.3z' fill='none' stroke='rgba(0,255,65,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 60px 52px;
+}
+
+/* ─── Ambient glow orb ─── */
+.ambient-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+.ambient-orb-green {
+  width: 500px; height: 500px;
+  background: var(--matrix-green);
+  top: -200px; right: -200px;
+}
+.ambient-orb-cyan {
+  width: 400px; height: 400px;
+  background: var(--matrix-cyan);
+  bottom: -150px; left: -150px;
+}
+
+/* ─── Data readout ─── */
+.data-readout {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--matrix-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.data-readout::before {
+  content: '> ';
+  color: var(--matrix-green);
+}
+
+/* ─── HUD corner decorations ─── */
+.hud-corner {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9996;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--matrix-muted);
+  opacity: 0.4;
+}
+.hud-corner-tl { top: 72px; left: 12px; }
+.hud-corner-tr { top: 72px; right: 12px; text-align: right; }
+.hud-corner-bl { bottom: 40px; left: 12px; }
+.hud-corner-br { bottom: 40px; right: 12px; text-align: right; }
+
+/* ─── Page transition ─── */
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(12px); filter: blur(2px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.page-enter {
+  animation: page-enter 0.4s ease-out;
+}
+
+/* ─── Energy pulse (for interactive elements) ─── */
+@keyframes energy-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(0, 229, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+}
+.energy-pulse {
+  animation: energy-pulse 2s ease-out infinite;
+}

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from '@/app/contract';
+import { useWallet, checkPlayerEntry } from '@/components/WalletContext';
 import TokenCard from '@/components/TokenCard';
 import NeonButton from '@/components/NeonButton';
 import WalletButton from '@/components/WalletButton';
@@ -9,14 +10,11 @@ import HudFrame from '@/components/HudFrame';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
-const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 interface Token { symbol: string; price: number; direction: 'LONG' | 'SHORT' | null; }
 
 export default function Play() {
-  const [account, setAccount] = useState('');
-  const [chainId, setChainId] = useState<number | null>(null);
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const { account, provider, isCorrectChain } = useWallet();
   const [hasEntered, setHasEntered] = useState(false);
   const [checkingEntry, setCheckingEntry] = useState(false);
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -30,24 +28,16 @@ export default function Play() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'info'|'error'|'success'>('info');
 
-  const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
   const showMsg = (msg: string, type: 'info'|'error'|'success'='info') => { setMessage(msg); setMessageType(type); };
 
-  const checkEntry = useCallback(async (prov: ethers.BrowserProvider, addr: string) => {
+  useEffect(() => {
+    if (!provider || !account || !isCorrectChain) { setHasEntered(false); return; }
     setCheckingEntry(true);
-    try {
-      const c = new ethers.Contract(DEPLOYED_ADDRESS, CONTRACT_ABI, prov);
-      const filter = c.filters.Entered(TOURNAMENT_ID, addr);
-      const events = await c.queryFilter(filter, 0, 'latest');
-      setHasEntered(events.length > 0);
-    } catch { setHasEntered(false); }
-    setCheckingEntry(false);
-  }, []);
-
-  const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
-    setAccount(acc); setChainId(chId); setProvider(prov); showMsg('','info');
-    if (chId === BASE_SEPOLIA_CHAIN_ID) checkEntry(prov, acc);
-  };
+    checkPlayerEntry(provider, account, TOURNAMENT_ID).then(entered => {
+      setHasEntered(entered);
+      setCheckingEntry(false);
+    });
+  }, [provider, account, isCorrectChain]);
 
   useEffect(() => {
     fetch(`${API_URL}/tokens`).then(r => r.json()).then(d => {
@@ -110,7 +100,6 @@ export default function Play() {
   return (
     <div className="relative min-h-screen">
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 space-y-6 animate-fade-in-up">
-        {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl matrix-text font-bold tracking-wider glitch" data-text="DRAFT ROOM">DRAFT ROOM</h1>
           <p className="text-xs text-[#4D754D] font-mono mt-1.5 tracking-[0.15em] uppercase">
@@ -118,19 +107,16 @@ export default function Play() {
           </p>
         </div>
 
-        {/* Wallet */}
         <div className="flex justify-center">
-          <WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={m=>showMsg(m,'error')}/>
+          <WalletButton />
         </div>
 
-        {/* Messages */}
         {message&&<div className={`p-3 rounded border text-sm font-mono text-center ${
           messageType==='error'?'border-[#FF1A40] bg-[#1A0A0A] text-[#FF1A40]':
           messageType==='success'?'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]':
           'border-[#1A2A1A] bg-[#0A0A0F] text-[#C0FFC0]'
         }`}>{message}<button onClick={()=>setMessage('')} className="ml-3 text-[#4D754D]">✕</button></div>}
 
-        {/* Entry Status */}
         {account && isCorrectChain && (
           <HudFrame variant={hasEntered ? 'green' : 'red'} title="ENTRY STATUS" subtitle={checkingEntry ? 'CHECKING' : hasEntered ? 'READY' : 'REQUIRED'}>
             <p className={`text-sm font-mono text-center ${hasEntered ? 'text-[#00FF41]' : 'text-[#FF1A40]'}`}>
@@ -139,25 +125,20 @@ export default function Play() {
           </HudFrame>
         )}
 
-        {/* Benchmark */}
         <HudFrame variant="gold" title={`BENCHMARK: ${benchmark}`}>
           <p className="text-center font-mono text-[#FFD700] text-lg">
             ${prices[benchmark]?.toLocaleString()||'...'}
           </p>
         </HudFrame>
 
-        {/* Captain indicator */}
         {selectedTokens.size>0&&(
           <HudFrame variant="green" title="CAPTAIN" subtitle={`${captainMultiplier}x MULTIPLIER`}>
-            <p className="text-center font-mono text-[#00FF41] text-sm font-bold">
-              ⚡ {order[captainIndex]||'...'}
-            </p>
+            <p className="text-center font-mono text-[#00FF41] text-sm font-bold">⚡ {order[captainIndex]||'...'}</p>
           </HudFrame>
         )}
 
-        {/* Token Grid */}
         <HudFrame variant="green" title="AVAILABLE TOKENS" subtitle={`${selectedTokens.size}/3 SELECTED`} glowing={selectedTokens.size===3}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 stagger">
             {tokens.filter(t=>t.symbol!==benchmark).map(t=>{
               const i=order.indexOf(t.symbol);
               return <TokenCard key={t.symbol} token={t} isSelected={selectedTokens.has(t.symbol)} isCaptain={i>=0&&i===captainIndex} isLong={selectedTokens.get(t.symbol)==='LONG'} isShort={selectedTokens.get(t.symbol)==='SHORT'} onToggle={toggleToken} onMakeCaptain={makeCaptain}/>;
@@ -165,12 +146,10 @@ export default function Play() {
           </div>
         </HudFrame>
 
-        {/* Referral */}
         <HudFrame variant="cyan" title="REFERRAL" subtitle="15% REWARD">
           <input type="text" value={referrer} onChange={e=>setReferrer(e.target.value)} placeholder="0x..." className="w-full px-3 py-2 rounded bg-[#0A0A0F] border border-[#1A2A1A] text-sm text-[#C0FFC0] font-mono focus:border-[#00E5FF] focus:outline-none focus:shadow-[0_0_10px_rgba(0,229,255,0.15)] placeholder-[#2A3A2A] transition-all"/>
         </HudFrame>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <NeonButton onClick={enterTournament} disabled={!account || !isCorrectChain || hasEntered} loading={loading}>
             ENTER (0.001 ETH)

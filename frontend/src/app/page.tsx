@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from './contract';
+import { useWallet } from '@/components/WalletContext';
 import TournamentBar from '@/components/TournamentBar';
 import WalletButton from '@/components/WalletButton';
 import HudFrame from '@/components/HudFrame';
@@ -10,7 +11,6 @@ import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
-const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 interface LeaderboardEntryType {
   player: string; score: number; captain_index: number;
@@ -18,20 +18,12 @@ interface LeaderboardEntryType {
 }
 
 export default function Arena() {
-  const [account, setAccount] = useState('');
-  const [chainId, setChainId] = useState<number | null>(null);
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const { account, provider, isCorrectChain } = useWallet();
   const [tournament, setTournament] = useState<any>(null);
   const [loadingContract, setLoadingContract] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntryType[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [benchmark, setBenchmark] = useState('BTC');
-  const [message, setMessage] = useState('');
-
-  const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
-  const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
-    setAccount(acc); setChainId(chId); setProvider(prov); setMessage('');
-  };
 
   useEffect(() => {
     fetch(`${API_URL}/tokens`).then(r => r.json()).then(d => {
@@ -80,18 +72,10 @@ export default function Arena() {
           </p>
         </div>
 
-        {/* Wallet */}
         <div className="flex justify-center">
-          <WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={setMessage} />
+          <WalletButton />
         </div>
 
-        {message && (
-          <div className="p-3 rounded border border-[#FF1A40] bg-[#1A0A0A] text-sm font-mono text-[#FF1A40] text-center">
-            {message}<button onClick={() => setMessage('')} className="ml-3 text-[#4D754D]">✕</button>
-          </div>
-        )}
-
-        {/* BTC Ticker */}
         {btcPrice > 0 && (
           <HudFrame variant="gold" title="BENCHMARK: BTC/USDT" subtitle="LIVE" glowing>
             <div className="text-center">
@@ -102,7 +86,6 @@ export default function Arena() {
           </HudFrame>
         )}
 
-        {/* Tournament Bar */}
         {tournament && (
           <TournamentBar totalPool={tournament.totalPool} playerCount={tournament.playerCount}
             draftDeadline={tournament.draftDeadline} endTime={tournament.endTime} finalized={tournament.finalized} />
@@ -110,16 +93,21 @@ export default function Arena() {
 
         {/* CTA */}
         <div className="text-center space-y-3">
-          <Link href="/play" className="inline-block">
-            <span className="btn-neon px-10 py-3.5 text-base font-mono tracking-[0.2em]">ENTER TOURNAMENT</span>
+          <Link href="/play" className="inline-block group">
+            <span className="futuristic-btn px-10 py-3.5 text-base font-mono tracking-[0.2em] uppercase inline-block transition-all duration-300 hover:scale-105">
+              <span className="flex items-center gap-2">
+                <span className="text-[#00E5FF] group-hover:animate-pulse">▶</span>
+                ENTER TOURNAMENT
+                <span className="text-[#00E5FF] group-hover:animate-pulse">◀</span>
+              </span>
+            </span>
           </Link>
           <p className="text-[10px] text-[#4D754D] font-mono">0.001 ETH • 3 PICKS • 1 CAPTAIN</p>
         </div>
 
-        {/* Leaderboard */}
         {leaderboard.length > 0 && (
           <HudFrame variant="green" title="LEADERBOARD" subtitle={`TOP ${Math.min(5, leaderboard.length)}`}>
-            <div className="space-y-2">
+            <div className="space-y-2 stagger">
               {leaderboard.slice(0, 5).map((e, i) => <LeaderboardEntry key={e.player} entry={e} rank={i+1} />)}
             </div>
             <div className="text-center mt-3">
@@ -130,7 +118,6 @@ export default function Arena() {
           </HudFrame>
         )}
 
-        {/* Status */}
         {!tournament && (
           <div className="text-center py-10">
             {!account ? (
