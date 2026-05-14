@@ -11,28 +11,31 @@ interface Props {
 }
 
 export default function LeaderboardEntry({ entry, rank }: Props) {
-  const rankColors: Record<number, string> = {
-    1: 'border-[#FFD700] bg-[#1A1A0A]/30 neon-box-gold',
-    2: 'border-[#C0C0C0] bg-[#1A1A1A]/20',
-    3: 'border-[#CD7F32] bg-[#1A0D0A]/20',
+  const rankStyles: Record<number, string> = {
+    1: 'border-[#FFD700]/40 bg-[#1A1A0A]/60 neon-box-gold',
+    2: 'border-[#C0C0C0]/30 bg-[#151515]/60',
+    3: 'border-[#CD7F32]/30 bg-[#1A0D0A]/60',
   };
-  const borderClass = rankColors[rank] || 'border-[#1A3A1A] bg-[#0D0D0D]';
+  const rankText: Record<number, string> = {
+    1: 'text-[#FFD700]',
+    2: 'text-[#C0C0C0]',
+    3: 'text-[#CD7F32]',
+  };
+  const borderClass = rankStyles[rank] || 'border-[#1A2A1A]/30 bg-[#0A0A0F]/60';
 
   return (
-    <div className={`p-3 rounded border ${borderClass} transition-all`}>
+    <div className={`p-3 rounded border ${borderClass} transition-all hover:border-[#2A4A2A]/50`}>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <span className={`font-mono font-bold text-sm w-6 ${
-            rank === 1 ? 'text-[#FFD700]' : rank <= 3 ? 'text-[#B3FFB3]' : 'text-[#4D804D]'
-          }`}>
-            {rank}.
+          <span className={`font-mono font-bold text-sm w-6 ${rankText[rank] || 'text-[#4D754D]'}`}>
+            {rank < 10 ? `0${rank}` : rank}.
           </span>
-          <span className="text-sm font-mono text-[#B3FFB3]">
+          <span className="text-sm font-mono text-[#C0FFC0]">
             {entry.player.slice(0, 6)}...{entry.player.slice(-4)}
           </span>
         </div>
         <span className={`font-mono font-bold text-sm ${
-          entry.score > 0 ? 'text-[#00FF41]' : entry.score < 0 ? 'text-[#FF1A40]' : 'text-[#4D804D]'
+          entry.score > 0 ? 'text-[#00FF41]' : entry.score < 0 ? 'text-[#FF1A40]' : 'text-[#4D754D]'
         }`}>
           {entry.score > 0 ? '+' : ''}{entry.score.toFixed(2)}%
         </span>
@@ -43,7 +46,7 @@ export default function LeaderboardEntry({ entry, rank }: Props) {
             key={p.symbol}
             className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
               pi === entry.captain_index
-                ? 'bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40'
+                ? 'bg-[#FFD700]/15 text-[#FFD700] border border-[#FFD700]/30'
                 : p.direction === 'LONG'
                 ? 'bg-[#00FF41]/10 text-[#00FF41] border border-[#00FF41]/20'
                 : 'bg-[#FF1A40]/10 text-[#FF1A40] border border-[#FF1A40]/20'

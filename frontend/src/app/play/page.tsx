@@ -5,7 +5,7 @@ import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from '@/app/contra
 import TokenCard from '@/components/TokenCard';
 import NeonButton from '@/components/NeonButton';
 import WalletButton from '@/components/WalletButton';
-import CodeRain from '@/components/CodeRain';
+import HudFrame from '@/components/HudFrame';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
@@ -31,10 +31,8 @@ export default function Play() {
   const [messageType, setMessageType] = useState<'info'|'error'|'success'>('info');
 
   const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
-
   const showMsg = (msg: string, type: 'info'|'error'|'success'='info') => { setMessage(msg); setMessageType(type); };
-  
-  // Check if player has entered tournament
+
   const checkEntry = useCallback(async (prov: ethers.BrowserProvider, addr: string) => {
     setCheckingEntry(true);
     try {
@@ -67,7 +65,6 @@ export default function Play() {
     const order = Array.from(next.keys());
     if (captainIndex >= order.length) setCaptainIndex(Math.max(0, order.length-1));
   };
-
   const getOrder = () => Array.from(selectedTokens.keys());
   const makeCaptain = (s: string) => { const i = getOrder().indexOf(s); if (i>=0) setCaptainIndex(i); };
 
@@ -89,7 +86,7 @@ export default function Play() {
 
   const enterTournament = async () => {
     if (!provider || !account) return showMsg('Connect wallet','error');
-    if (!isCorrectChain) return showMsg('Switch to Base Sepolia in your wallet','error');
+    if (!isCorrectChain) return showMsg('Switch to Base Sepolia','error');
     setLoading(true);
     try {
       const signer = await provider.getSigner();
@@ -111,35 +108,83 @@ export default function Play() {
   const canDraft = account && isCorrectChain && hasEntered && selectedTokens.size === 3;
 
   return (
-    <div className="relative min-h-screen"><CodeRain/>
-    <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 space-y-5">
-      <div className="text-center"><h1 className="text-2xl matrix-text font-bold tracking-wider glitch">DRAFT ROOM</h1>
-      <p className="text-xs text-[#4D804D] font-mono mt-1">SELECT 3 • CAPTAIN • ENTER</p></div>
-      <div className="flex justify-center"><WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={m=>showMsg(m,'error')}/></div>
-      {message&&<div className={`p-3 rounded border text-sm font-mono text-center ${messageType==='error'?'border-[#FF1A40] bg-[#1A0A0A] text-[#FF1A40]':messageType==='success'?'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]':'border-[#1A3A1A] bg-[#0D0D0D] text-[#B3FFB3]'}`}>{message}<button onClick={()=>setMessage('')} className="ml-3 text-[#4D804D]">✕</button></div>}
-      
-      {/* Entry status indicator */}
-      {account && isCorrectChain && (
-        <div className={`p-2 rounded border text-xs font-mono text-center ${hasEntered ? 'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]' : checkingEntry ? 'border-[#1A3A1A] bg-[#0D0D0D] text-[#4D804D]' : 'border-[#FF1A40]/30 bg-[#1A0A0A] text-[#FF1A40]'}`}>
-          {checkingEntry ? 'CHECKING ENTRY...' : hasEntered ? '◆ ENTERED — READY TO DRAFT' : '◇ NOT ENTERED — DEPOSIT 0.001 ETH FIRST'}
+    <div className="relative min-h-screen">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 space-y-6 animate-fade-in-up">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl matrix-text font-bold tracking-wider glitch" data-text="DRAFT ROOM">DRAFT ROOM</h1>
+          <p className="text-xs text-[#4D754D] font-mono mt-1.5 tracking-[0.15em] uppercase">
+            SELECT 3 <span className="text-[#2A3A2A]">//</span> CAPTAIN <span className="text-[#2A3A2A]">//</span> ENTER
+          </p>
         </div>
-      )}
 
-      <div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D] text-sm font-mono text-center"><span className="text-[#4D804D]">BENCHMARK: </span><span className="text-[#FFD700] font-bold">{benchmark}</span><span className="text-[#4D804D]"> @ $</span><span className="text-[#B3FFB3]">{prices[benchmark]?.toLocaleString()||'...'}</span></div>
-      {selectedTokens.size>0&&<div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D] text-sm font-mono text-center"><span className="text-[#4D804D]">CAPTAIN ({captainMultiplier}x): </span><span className="text-[#FFD700] font-bold">{order[captainIndex]||'...'}</span></div>}
-      <div className="flex justify-between items-center"><span className="text-xs font-mono text-[#4D804D] uppercase tracking-wider">▸ Available Tokens</span><span className={`text-xs font-mono font-bold ${selectedTokens.size===3?'text-[#00FF41]':'text-[#4D804D]'}`}>{selectedTokens.size}/3</span></div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {tokens.filter(t=>t.symbol!==benchmark).map(t=>{const i=order.indexOf(t.symbol);return<TokenCard key={t.symbol} token={t} isSelected={selectedTokens.has(t.symbol)} isCaptain={i>=0&&i===captainIndex} isLong={selectedTokens.get(t.symbol)==='LONG'} isShort={selectedTokens.get(t.symbol)==='SHORT'} onToggle={toggleToken} onMakeCaptain={makeCaptain}/>;})}
+        {/* Wallet */}
+        <div className="flex justify-center">
+          <WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={m=>showMsg(m,'error')}/>
+        </div>
+
+        {/* Messages */}
+        {message&&<div className={`p-3 rounded border text-sm font-mono text-center ${
+          messageType==='error'?'border-[#FF1A40] bg-[#1A0A0A] text-[#FF1A40]':
+          messageType==='success'?'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]':
+          'border-[#1A2A1A] bg-[#0A0A0F] text-[#C0FFC0]'
+        }`}>{message}<button onClick={()=>setMessage('')} className="ml-3 text-[#4D754D]">✕</button></div>}
+
+        {/* Entry Status */}
+        {account && isCorrectChain && (
+          <HudFrame variant={hasEntered ? 'green' : 'red'} title="ENTRY STATUS" subtitle={checkingEntry ? 'CHECKING' : hasEntered ? 'READY' : 'REQUIRED'}>
+            <p className={`text-sm font-mono text-center ${hasEntered ? 'text-[#00FF41]' : 'text-[#FF1A40]'}`}>
+              {checkingEntry ? 'CHECKING ENTRY...' : hasEntered ? '◆ ENTERED — READY TO DRAFT' : '◇ NOT ENTERED — DEPOSIT 0.001 ETH FIRST'}
+            </p>
+          </HudFrame>
+        )}
+
+        {/* Benchmark */}
+        <HudFrame variant="gold" title={`BENCHMARK: ${benchmark}`}>
+          <p className="text-center font-mono text-[#FFD700] text-lg">
+            ${prices[benchmark]?.toLocaleString()||'...'}
+          </p>
+        </HudFrame>
+
+        {/* Captain indicator */}
+        {selectedTokens.size>0&&(
+          <HudFrame variant="green" title="CAPTAIN" subtitle={`${captainMultiplier}x MULTIPLIER`}>
+            <p className="text-center font-mono text-[#00FF41] text-sm font-bold">
+              ⚡ {order[captainIndex]||'...'}
+            </p>
+          </HudFrame>
+        )}
+
+        {/* Token Grid */}
+        <HudFrame variant="green" title="AVAILABLE TOKENS" subtitle={`${selectedTokens.size}/3 SELECTED`} glowing={selectedTokens.size===3}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {tokens.filter(t=>t.symbol!==benchmark).map(t=>{
+              const i=order.indexOf(t.symbol);
+              return <TokenCard key={t.symbol} token={t} isSelected={selectedTokens.has(t.symbol)} isCaptain={i>=0&&i===captainIndex} isLong={selectedTokens.get(t.symbol)==='LONG'} isShort={selectedTokens.get(t.symbol)==='SHORT'} onToggle={toggleToken} onMakeCaptain={makeCaptain}/>;
+            })}
+          </div>
+        </HudFrame>
+
+        {/* Referral */}
+        <HudFrame variant="cyan" title="REFERRAL" subtitle="15% REWARD">
+          <input type="text" value={referrer} onChange={e=>setReferrer(e.target.value)} placeholder="0x..." className="w-full px-3 py-2 rounded bg-[#0A0A0F] border border-[#1A2A1A] text-sm text-[#C0FFC0] font-mono focus:border-[#00E5FF] focus:outline-none focus:shadow-[0_0_10px_rgba(0,229,255,0.15)] placeholder-[#2A3A2A] transition-all"/>
+        </HudFrame>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <NeonButton onClick={enterTournament} disabled={!account || !isCorrectChain || hasEntered} loading={loading}>
+            ENTER (0.001 ETH)
+          </NeonButton>
+          <NeonButton onClick={submitDraft} disabled={!canDraft} loading={loading} variant="gold">
+            SUBMIT DRAFT
+          </NeonButton>
+        </div>
+
+        {account && isCorrectChain && !hasEntered && (
+          <p className="text-center text-[10px] text-[#FF1A40] font-mono animate-pulse">⚠ ENTER TOURNAMENT BEFORE SUBMITTING DRAFT</p>
+        )}
+        <p className="text-center text-[10px] text-[#4D754D] font-mono">1: ENTER (gas+0.001 ETH) • 2: DRAFT (free)</p>
       </div>
-      <div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D]"><label className="text-[10px] text-[#4D804D] font-mono block mb-1 uppercase tracking-wider">Referral (15%)</label><input type="text" value={referrer} onChange={e=>setReferrer(e.target.value)} placeholder="0x..." className="w-full px-3 py-1.5 rounded bg-[#0A0A0A] border border-[#1A3A1A] text-sm text-[#B3FFB3] font-mono focus:border-[#00FF41] focus:outline-none"/></div>
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <NeonButton onClick={enterTournament} disabled={!account || !isCorrectChain || hasEntered} loading={loading}>ENTER (0.001 ETH)</NeonButton>
-        <NeonButton onClick={submitDraft} disabled={!canDraft} loading={loading} variant="gold">SUBMIT DRAFT</NeonButton>
-      </div>
-      {account && isCorrectChain && !hasEntered && (
-        <p className="text-center text-[10px] text-[#FF1A40] font-mono animate-pulse">⚠ ENTER TOURNAMENT BEFORE SUBMITTING DRAFT</p>
-      )}
-      <p className="text-center text-[10px] text-[#4D804D] font-mono">1: ENTER (gas+0.001 ETH) • 2: DRAFT (free)</p>
-    </div></div>
+    </div>
   );
 }

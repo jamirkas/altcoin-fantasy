@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from './contract';
-import CodeRain from '@/components/CodeRain';
 import TournamentBar from '@/components/TournamentBar';
 import WalletButton from '@/components/WalletButton';
+import HudFrame from '@/components/HudFrame';
 import LeaderboardEntry from '@/components/LeaderboardEntry';
 import Link from 'next/link';
 
@@ -29,7 +29,6 @@ export default function Arena() {
   const [message, setMessage] = useState('');
 
   const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
-
   const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
     setAccount(acc); setChainId(chId); setProvider(prov); setMessage('');
   };
@@ -44,7 +43,6 @@ export default function Arena() {
     return () => clearInterval(interval);
   }, []);
 
-  // Load tournament from contract (only when on correct chain)
   useEffect(() => {
     if (!provider || !isCorrectChain) { setTournament(null); return; }
     setLoadingContract(true);
@@ -62,7 +60,6 @@ export default function Arena() {
     }).catch(() => { setLoadingContract(false); });
   }, [provider, isCorrectChain]);
 
-  // Fetch leaderboard from API
   useEffect(() => {
     fetch(`${API_URL}/leaderboard/${TOURNAMENT_ID}`).then(r => r.json())
       .then(d => setLeaderboard(d.leaderboard || [])).catch(() => {});
@@ -72,69 +69,86 @@ export default function Arena() {
 
   return (
     <div className="relative min-h-screen">
-      <CodeRain />
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <div className="text-center space-y-2 py-4">
-          <h1 className="text-3xl sm:text-5xl font-bold matrix-text glitch tracking-widest">ALTCOIN_FANTASY</h1>
-          <p className="text-sm text-[#4D804D] font-mono">DRAFT ALTS • BEAT {benchmark} • CLAIM ETH</p>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Hero */}
+        <div className="text-center space-y-3 py-6 animate-fade-in-up">
+          <h1 className="text-4xl sm:text-6xl font-bold matrix-text glitch tracking-[0.15em]" data-text="ALTCOIN_FANTASY">
+            ALTCOIN_FANTASY
+          </h1>
+          <p className="text-sm text-[#4D754D] font-mono tracking-[0.2em] uppercase">
+            <span className="text-[#00FF41]">▸</span> DRAFT ALTS <span className="text-[#2A3A2A]">//</span> BEAT {benchmark} <span className="text-[#2A3A2A]">//</span> CLAIM ETH <span className="text-[#00FF41]">◂</span>
+          </p>
         </div>
 
+        {/* Wallet */}
         <div className="flex justify-center">
           <WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={setMessage} />
         </div>
 
         {message && (
           <div className="p-3 rounded border border-[#FF1A40] bg-[#1A0A0A] text-sm font-mono text-[#FF1A40] text-center">
-            {message}<button onClick={() => setMessage('')} className="ml-3 text-[#4D804D]">✕</button>
+            {message}<button onClick={() => setMessage('')} className="ml-3 text-[#4D754D]">✕</button>
           </div>
         )}
 
+        {/* BTC Ticker */}
         {btcPrice > 0 && (
-          <div className="text-center font-mono text-sm">
-            <span className="text-[#4D804D]">{benchmark}: </span>
-            <span className="text-[#FFD700] font-bold">${btcPrice.toLocaleString()}</span>
-          </div>
+          <HudFrame variant="gold" title="BENCHMARK: BTC/USDT" subtitle="LIVE" glowing>
+            <div className="text-center">
+              <span className="text-3xl font-bold font-mono text-[#FFD700] ticker-up">
+                ${btcPrice.toLocaleString()}
+              </span>
+            </div>
+          </HudFrame>
         )}
 
+        {/* Tournament Bar */}
         {tournament && (
           <TournamentBar totalPool={tournament.totalPool} playerCount={tournament.playerCount}
             draftDeadline={tournament.draftDeadline} endTime={tournament.endTime} finalized={tournament.finalized} />
         )}
 
+        {/* CTA */}
         <div className="text-center space-y-3">
           <Link href="/play" className="inline-block">
-            <span className="btn-neon px-8 py-3 text-base font-mono tracking-widest">ENTER TOURNAMENT</span>
+            <span className="btn-neon px-10 py-3.5 text-base font-mono tracking-[0.2em]">ENTER TOURNAMENT</span>
           </Link>
-          <p className="text-[10px] text-[#4D804D] font-mono">0.001 ETH • 3 PICKS • 1 CAPTAIN</p>
+          <p className="text-[10px] text-[#4D754D] font-mono">0.001 ETH • 3 PICKS • 1 CAPTAIN</p>
         </div>
 
+        {/* Leaderboard */}
         {leaderboard.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h2 className="text-sm font-mono text-[#4D804D] uppercase tracking-wider">▸ TOP {Math.min(5, leaderboard.length)}</h2>
-              <Link href="/leaderboard" className="text-xs font-mono text-[#00FF41] hover:underline">VIEW ALL →</Link>
+          <HudFrame variant="green" title="LEADERBOARD" subtitle={`TOP ${Math.min(5, leaderboard.length)}`}>
+            <div className="space-y-2">
+              {leaderboard.slice(0, 5).map((e, i) => <LeaderboardEntry key={e.player} entry={e} rank={i+1} />)}
             </div>
-            {leaderboard.slice(0, 5).map((e, i) => <LeaderboardEntry key={e.player} entry={e} rank={i+1} />)}
-          </div>
+            <div className="text-center mt-3">
+              <Link href="/leaderboard" className="text-[10px] font-mono text-[#00FF41] hover:text-[#33FF66] transition-colors">
+                [ VIEW FULL LEADERBOARD → ]
+              </Link>
+            </div>
+          </HudFrame>
         )}
 
-        {/* Status area */}
+        {/* Status */}
         {!tournament && (
           <div className="text-center py-10">
             {!account ? (
-              <>
-                <p className="text-sm font-mono text-[#4D804D]">◈ CONNECT WALLET TO BEGIN</p>
-                <p className="text-[10px] text-[#1A3A1A] font-mono mt-1">Base Sepolia Testnet</p>
-              </>
+              <HudFrame variant="cyan" title="SYSTEM STATUS">
+                <p className="text-sm font-mono text-[#00E5FF]">◈ CONNECT WALLET TO BEGIN</p>
+                <p className="text-[10px] text-[#004D5A] font-mono mt-1">Base Sepolia Testnet</p>
+              </HudFrame>
             ) : !isCorrectChain ? (
-              <p className="text-sm font-mono text-[#FF1A40] animate-pulse">⚠ SWITCH TO BASE SEPOLIA NETWORK</p>
+              <div className="p-6 rounded border border-[#FF1A40] bg-[#1A0A0A] text-sm font-mono text-[#FF1A40] text-center animate-pulse">
+                ⚠ SWITCH TO BASE SEPOLIA NETWORK
+              </div>
             ) : loadingContract ? (
-              <>
-                <div className="matrix-spinner mx-auto mb-4" />
-                <p className="text-sm font-mono text-[#4D804D]">LOADING TOURNAMENT...</p>
-              </>
+              <div className="text-center">
+                <div className="matrix-spinner mx-auto mb-4 w-8 h-8" />
+                <p className="text-sm font-mono text-[#4D754D]">LOADING TOURNAMENT...</p>
+              </div>
             ) : (
-              <p className="text-sm font-mono text-[#4D804D]">NO ACTIVE TOURNAMENT</p>
+              <p className="text-sm font-mono text-[#4D754D]">NO ACTIVE TOURNAMENT</p>
             )}
           </div>
         )}
