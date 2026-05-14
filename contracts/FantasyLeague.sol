@@ -32,10 +32,17 @@ contract FantasyLeague {
     // ─── Configurable defaults ───
     uint256 public defaultEntryFee = 0.001 ether;
     uint256 public captainMultiplier = 2;
-    uint256 public maxEntriesPerPlayer = 3;
+    uint256 public maxEntriesPerPlayer = 1;
 
     // ─── Captain picks: tournamentId → player → pickIndex (0-2) ───
     mapping(uint256 => mapping(address => uint8)) public captainPicks;
+
+    // ─── Entry tracking: tournamentId → player → hasPaid ───
+    mapping(uint256 => mapping(address => bool)) public hasEntered;
+
+    // ─── Dark Forest: commit-reveal draft system ───
+    mapping(uint256 => mapping(address => bytes32)) public draftCommitments;
+    mapping(uint256 => mapping(address => bool)) public draftRevealed;
 
     // ─── Payout tracking ───
     mapping(uint256 => mapping(address => uint256)) public claimed;
@@ -52,6 +59,13 @@ contract FantasyLeague {
     );
     event CaptainSet(
         uint256 indexed tournamentId, address indexed player, uint8 pickIndex
+    );
+    event DraftCommitted(
+        uint256 indexed tournamentId, address indexed player, bytes32 commitment
+    );
+    event DraftRevealed(
+        uint256 indexed tournamentId, address indexed player,
+        uint8[3] tokenIds, uint8[3] directions, uint8 captainIndex
     );
     event ResultsPosted(uint256 indexed tournamentId, bytes32 merkleRoot);
     event Claimed(
@@ -184,6 +198,7 @@ contract FantasyLeague {
         require(block.timestamp < t.draftDeadline, "Draft closed");
         require(msg.value == t.entryFee, "Wrong fee");
         require(!t.finalized, "Finalized");
+        require(!hasEntered[_tournamentId][msg.sender], "Already entered");
 
         // Referral cut
         uint256 referralCut = 0;
@@ -195,6 +210,7 @@ contract FantasyLeague {
         t.totalPool += msg.value - referralCut;
         t.playerCount += 1;
         captainPicks[_tournamentId][msg.sender] = _captainIndex;
+        hasEntered[_tournamentId][msg.sender] = true;
 
         emit Entered(_tournamentId, msg.sender, _referrer, _captainIndex, msg.value, t.playerCount);
     }
@@ -259,6 +275,65 @@ contract FantasyLeague {
 
     function tournamentCount() external view returns (uint256) {
         return tournaments.length;
+    }
+
+    // ─── Dark Forest: Commit-Reveal Draft System ───
+
+    /// Commit a draft hash before the deadline. Picks stay hidden.
+    /// Hash = keccak256(abi.encodePacked(salt, tokenId0, dir0, tokenId1, dir1, tokenId2, dir2, captainIndex))
+    function commitDraft(uint256 _tournamentId, bytes32 _commitment) external whenNotPaused {
+        Tournament storage t = tournaments[_tournamentId];
+        require(block.timestamp < t.draftDeadline, "Draft closed");
+        require(!t.finalized, "Finalized");
+        require(hasEntered[_tournamentId][msg.sender], "Not entered");
+        require(draftCommitments[_tournamentId][msg.sender] == bytes32(0), "Already committed");
+
+        draftCommitments[_tournamentId][msg.sender] = _commitment;
+        emit DraftCommitted(_tournamentId, msg.sender, _commitment);
+    }
+
+    /// Reveal picks after the deadline. Must match the commitment hash.
+    /// @param _tokenIds Array of 3 token IDs (indices from API token list)
+    /// @param _directions 0=LONG, 1=SHORT for each pick
+    /// @param _captainIndex 0-2 which pick is the captain
+    /// @param _salt The random salt used in the commitment
+    function revealDraft(
+        uint256 _tournamentId,
+        uint8[3] calldata _tokenIds,
+        uint8[3] calldata _directions,
+        uint8 _captainIndex,
+        bytes32 _salt
+    ) external whenNotPaused {
+        Tournament storage t = tournaments[_tournamentId];
+        require(block.timestamp >= t.draftDeadline, "Too early");
+        require(block.timestamp < t.endTime, "Reveal ended");
+        require(!draftRevealed[_tournamentId][msg.sender], "Already revealed");
+        require(_captainIndex < 3, "Bad captain");
+
+        bytes32 commitment = draftCommitments[_tournamentId][msg.sender];
+        require(commitment != bytes32(0), "No commitment");
+
+        bytes32 hash = keccak256(abi.encodePacked(
+            _salt,
+            _tokenIds[0], _directions[0],
+            _tokenIds[1], _directions[1],
+            _tokenIds[2], _directions[2],
+            _captainIndex
+        ));
+        require(hash == commitment, "Hash mismatch");
+
+        draftRevealed[_tournamentId][msg.sender] = true;
+        emit DraftRevealed(_tournamentId, msg.sender, _tokenIds, _directions, _captainIndex);
+    }
+
+    /// Check if a player has revealed
+    function isRevealed(uint256 _tournamentId, address _player) external view returns (bool) {
+        return draftRevealed[_tournamentId][_player];
+    }
+
+    /// Get a player's commitment hash (returns 0x0 if not committed)
+    function getCommitment(uint256 _tournamentId, address _player) external view returns (bytes32) {
+        return draftCommitments[_tournamentId][_player];
     }
 
     // ─── Merkle Proof (standard) ───

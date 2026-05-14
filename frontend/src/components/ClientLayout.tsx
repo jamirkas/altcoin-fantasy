@@ -33,6 +33,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             {[
               { href: "/", label: "ARENA", icon: "◈" },
               { href: "/play", label: "PLAY", icon: "▶" },
+              { href: "/garage", label: "GARAGE", icon: "⚙" },
               { href: "/leaderboard", label: "LEADERBOARD", icon: "▤" },
               { href: "/profile", label: "PROFILE", icon: "◉" },
             ].map(({ href, label, icon }) => (
@@ -55,7 +56,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <footer className="relative z-10 border-t border-[#1A2A1A]/50 py-4 px-4 text-center bg-[#050508]/90 backdrop-blur">
         <p className="text-[10px] text-[#4D754D] font-mono tracking-wider">
-          CONTRACT: 0x6D61...aE05 • BASE SEPOLIA • {new Date().getFullYear()}
+          CONTRACT: 0x4133...1B81 • BASE SEPOLIA • {new Date().getFullYear()}
         </p>
         <p className="text-[8px] text-[#2A3A2A] font-mono mt-1">SYS.ONLINE // NODES: 12 // LAT: 0.04ms</p>
       </footer>
