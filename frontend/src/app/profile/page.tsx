@@ -7,22 +7,28 @@ import NeonButton from '@/components/NeonButton';
 import CodeRain from '@/components/CodeRain';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const BASE_SEPOLIA_CHAIN_ID = '0x14A34';
 
 export default function Profile() {
   const [account, setAccount] = useState('');
+  const [chainId, setChainId] = useState<string | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [referralBalance, setReferralBalance] = useState('0');
   const [myDrafts, setMyDrafts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const connect = (acc: string, prov: ethers.BrowserProvider) => { setAccount(acc); setProvider(prov); };
+  const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
+
+  const connect = (acc: string, chId: string, prov: ethers.BrowserProvider) => {
+    setAccount(acc); setChainId(chId); setProvider(prov);
+  };
 
   useEffect(() => {
-    if (!provider || !account) return;
+    if (!provider || !account || !isCorrectChain) return;
     new ethers.Contract(DEPLOYED_ADDRESS, CONTRACT_ABI, provider).referralBalances(account)
       .then((b: bigint) => setReferralBalance(ethers.formatEther(b))).catch(() => {});
-  }, [provider, account]);
+  }, [provider, account, isCorrectChain]);
 
   useEffect(() => {
     if (!account) return;
@@ -48,9 +54,14 @@ export default function Profile() {
     <div className="relative z-10 max-w-2xl mx-auto px-4 py-6 space-y-5">
       <div className="text-center"><h1 className="text-2xl matrix-text font-bold tracking-wider glitch">PROFILE</h1>
       <p className="text-xs text-[#4D804D] font-mono mt-1">STATS • REFERRALS • HISTORY</p></div>
-      <div className="flex justify-center"><WalletButton account={account} provider={provider} onConnect={connect} onError={setMessage}/></div>
+      <div className="flex justify-center"><WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={setMessage}/></div>
       {!account&&<div className="text-center py-10"><p className="text-sm font-mono text-[#4D804D]">CONNECT WALLET</p></div>}
-      {account&&<>
+      {account && !isCorrectChain && (
+        <div className="p-3 rounded border border-[#FF1A40] bg-[#1A0A0A] text-sm font-mono text-[#FF1A40] text-center animate-pulse">
+          ⚠ SWITCH TO BASE SEPOLIA IN YOUR WALLET
+        </div>
+      )}
+      {account && isCorrectChain && <>
         <div className="p-4 rounded border border-[#1A3A1A] bg-[#0D0D0D] space-y-3">
           <div><span className="text-[10px] text-[#4D804D] font-mono uppercase tracking-wider block">Address</span><span className="text-sm font-mono text-[#B3FFB3] break-all">{account}</span></div>
           <div className="flex justify-between items-center">

@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
+const BASE_SEPOLIA_CHAIN_ID = '0x14A34';
 
 interface LeaderboardEntryType {
   player: string; score: number; captain_index: number;
@@ -18,16 +19,19 @@ interface LeaderboardEntryType {
 
 export default function Arena() {
   const [account, setAccount] = useState('');
+  const [chainId, setChainId] = useState<string | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [tournament, setTournament] = useState<any>(null);
+  const [loadingContract, setLoadingContract] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntryType[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [benchmark, setBenchmark] = useState('BTC');
-  const [myDraft, setMyDraft] = useState<any>(null);
   const [message, setMessage] = useState('');
 
-  const connect = (acc: string, prov: ethers.BrowserProvider) => {
-    setAccount(acc); setProvider(prov); setMessage('');
+  const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
+
+  const connect = (acc: string, chId: string, prov: ethers.BrowserProvider) => {
+    setAccount(acc); setChainId(chId); setProvider(prov); setMessage('');
   };
 
   useEffect(() => {
@@ -40,21 +44,28 @@ export default function Arena() {
     return () => clearInterval(interval);
   }, []);
 
+  // Load tournament from contract (only when on correct chain)
   useEffect(() => {
-    if (!provider) return;
+    if (!provider || !isCorrectChain) { setTournament(null); return; }
+    setLoadingContract(true);
     const c = new ethers.Contract(DEPLOYED_ADDRESS, CONTRACT_ABI, provider);
-    c.getTournament(TOURNAMENT_ID).then((t: any) => setTournament({
-      entryFee: ethers.formatEther(t[0]),
-      draftDeadline: new Date(Number(t[1]) * 1000),
-      endTime: new Date(Number(t[2]) * 1000),
-      totalPool: ethers.formatEther(t[3]),
-      playerCount: Number(t[4]),
-      finalized: t[5],
-    })).catch(() => {});
-  }, [provider]);
+    c.getTournament(TOURNAMENT_ID).then((t: any) => {
+      setTournament({
+        entryFee: ethers.formatEther(t[0]),
+        draftDeadline: new Date(Number(t[1]) * 1000),
+        endTime: new Date(Number(t[2]) * 1000),
+        totalPool: ethers.formatEther(t[3]),
+        playerCount: Number(t[4]),
+        finalized: t[5],
+      });
+      setLoadingContract(false);
+    }).catch(() => { setLoadingContract(false); });
+  }, [provider, isCorrectChain]);
 
+  // Fetch leaderboard from API
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/${TOURNAMENT_ID}`).then(r => r.json()).then(d => setLeaderboard(d.leaderboard || [])).catch(() => {});
+    fetch(`${API_URL}/leaderboard/${TOURNAMENT_ID}`).then(r => r.json())
+      .then(d => setLeaderboard(d.leaderboard || [])).catch(() => {});
   }, [account]);
 
   const btcPrice = prices[benchmark] || 0;
@@ -69,7 +80,7 @@ export default function Arena() {
         </div>
 
         <div className="flex justify-center">
-          <WalletButton account={account} provider={provider} onConnect={connect} onError={setMessage} />
+          <WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={setMessage} />
         </div>
 
         {message && (
@@ -107,10 +118,24 @@ export default function Arena() {
           </div>
         )}
 
+        {/* Status area — what to show when no tournament data */}
         {!tournament && (
           <div className="text-center py-10">
-            <div className="matrix-spinner mx-auto mb-4" />
-            <p className="text-sm font-mono text-[#4D804D]">CONNECTING TO BASE SEPOLIA...</p>
+            {!account ? (
+              <>
+                <p className="text-sm font-mono text-[#4D804D]">◈ CONNECT WALLET TO BEGIN</p>
+                <p className="text-[10px] text-[#1A3A1A] font-mono mt-1">Base Sepolia Testnet</p>
+              </>
+            ) : !isCorrectChain ? (
+              <p className="text-sm font-mono text-[#FF1A40] animate-pulse">⚠ SWITCH TO BASE SEPOLIA NETWORK</p>
+            ) : loadingContract ? (
+              <>
+                <div className="matrix-spinner mx-auto mb-4" />
+                <p className="text-sm font-mono text-[#4D804D]">LOADING TOURNAMENT...</p>
+              </>
+            ) : (
+              <p className="text-sm font-mono text-[#4D804D]">NO ACTIVE TOURNAMENT</p>
+            )}
           </div>
         )}
       </div>
