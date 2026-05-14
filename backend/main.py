@@ -19,6 +19,15 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 DB = "fantasy.db"
 BINANCE_API = "https://api.binance.com/api/v3"
 
+# ─── Root & Health ───
+@app.get("/")
+async def root():
+    return {"status": "ok", "service": "Altcoin Fantasy API"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
 # ─── Top-20 tokens (Binance USDT pairs) ───
 TOKENS = [
     "BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "AVAX",
@@ -228,7 +237,10 @@ def build_merkle_tree(winners: list[tuple[str, int]]) -> tuple[bytes, dict]:
 @app.get("/tokens")
 async def get_tokens():
     """List available tokens + current prices"""
-    prices = await get_prices()
+    try:
+        prices = await get_prices()
+    except Exception:
+        prices = {}  # Binance blocked or network error — return empty
     return {
         "tokens": TOKENS,
         "benchmark": BENCHMARK,
@@ -308,7 +320,10 @@ async def get_leaderboard(tournament_id: int):
     ).fetchall()
     conn.close()
 
-    current_prices = await get_prices()
+    try:
+        current_prices = await get_prices()
+    except Exception:
+        current_prices = {}  # Binance blocked
 
     leaderboard = []
     for player, picks_json, captain_index, submitted_at in drafts:
