@@ -7,11 +7,11 @@ import NeonButton from '@/components/NeonButton';
 import CodeRain from '@/components/CodeRain';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const BASE_SEPOLIA_CHAIN_ID = '0x14A34';
+const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 export default function Profile() {
   const [account, setAccount] = useState('');
-  const [chainId, setChainId] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [referralBalance, setReferralBalance] = useState('0');
   const [myDrafts, setMyDrafts] = useState<any[]>([]);
@@ -20,7 +20,7 @@ export default function Profile() {
 
   const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
 
-  const connect = (acc: string, chId: string, prov: ethers.BrowserProvider) => {
+  const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
     setAccount(acc); setChainId(chId); setProvider(prov);
   };
 

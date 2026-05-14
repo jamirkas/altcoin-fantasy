@@ -1,22 +1,21 @@
 'use client';
 import { ethers } from 'ethers';
 
-const BASE_SEPOLIA_CHAIN_ID = '0x14A34'; // 84532
+const BASE_SEPOLIA_CHAIN_ID = 84532;
+const BASE_SEPOLIA_CHAIN_ID_HEX = '0x14a34';
 const BASE_SEPOLIA = {
-  chainId: BASE_SEPOLIA_CHAIN_ID,
+  chainId: BASE_SEPOLIA_CHAIN_ID_HEX,
   chainName: 'Base Sepolia',
   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
   rpcUrls: ['https://sepolia.base.org'],
   blockExplorerUrls: ['https://sepolia.basescan.org'],
 };
 
-export const WRONG_NETWORK = 'Please switch to Base Sepolia';
-
 interface Props {
   account: string;
-  chainId: string | null;
+  chainId: number | null;
   provider: ethers.BrowserProvider | null;
-  onConnect: (account: string, chainId: string, provider: ethers.BrowserProvider) => void;
+  onConnect: (account: string, chainId: number, provider: ethers.BrowserProvider) => void;
   onError: (msg: string) => void;
 }
 
@@ -33,12 +32,12 @@ export default function WalletButton({ account, chainId, provider, onConnect, on
       const prov = new ethers.BrowserProvider(w);
       const accounts = await prov.send('eth_requestAccounts', []);
       const net = await prov.getNetwork();
-      const currentChainId = '0x' + net.chainId.toString(16);
+      const numericChainId = Number(net.chainId);
 
       // Switch to Base Sepolia if not already there
-      if (Number(net.chainId) !== 84532) {
+      if (numericChainId !== BASE_SEPOLIA_CHAIN_ID) {
         try {
-          await w.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }] });
+          await w.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID_HEX }] });
         } catch (switchErr: any) {
           // If chain not in wallet, add it
           if (switchErr.code === 4902) {
@@ -47,12 +46,12 @@ export default function WalletButton({ account, chainId, provider, onConnect, on
             throw switchErr;
           }
         }
-        // Re-fetch network after switch
-        const newNet = await prov.getNetwork();
-        const newChainId = '0x' + newNet.chainId.toString(16);
-        onConnect(accounts[0], newChainId, new ethers.BrowserProvider(w));
+        // Use FRESH provider after switch — old one caches network
+        const freshProv = new ethers.BrowserProvider(w);
+        const newNet = await freshProv.getNetwork();
+        onConnect(accounts[0], Number(newNet.chainId), freshProv);
       } else {
-        onConnect(accounts[0], currentChainId, prov);
+        onConnect(accounts[0], numericChainId, prov);
       }
 
       // Listen for network/account changes

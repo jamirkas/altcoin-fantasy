@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from '@/app/contract';
 import TokenCard from '@/components/TokenCard';
@@ -9,14 +9,16 @@ import CodeRain from '@/components/CodeRain';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
-const BASE_SEPOLIA_CHAIN_ID = '0x14A34';
+const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 interface Token { symbol: string; price: number; direction: 'LONG' | 'SHORT' | null; }
 
 export default function Play() {
   const [account, setAccount] = useState('');
-  const [chainId, setChainId] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [hasEntered, setHasEntered] = useState(false);
+  const [checkingEntry, setCheckingEntry] = useState(false);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [benchmark, setBenchmark] = useState('BTC');
@@ -31,8 +33,22 @@ export default function Play() {
   const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
 
   const showMsg = (msg: string, type: 'info'|'error'|'success'='info') => { setMessage(msg); setMessageType(type); };
-  const connect = (acc: string, chId: string, prov: ethers.BrowserProvider) => {
+  
+  // Check if player has entered tournament
+  const checkEntry = useCallback(async (prov: ethers.BrowserProvider, addr: string) => {
+    setCheckingEntry(true);
+    try {
+      const c = new ethers.Contract(DEPLOYED_ADDRESS, CONTRACT_ABI, prov);
+      const filter = c.filters.Entered(TOURNAMENT_ID, addr);
+      const events = await c.queryFilter(filter, 0, 'latest');
+      setHasEntered(events.length > 0);
+    } catch { setHasEntered(false); }
+    setCheckingEntry(false);
+  }, []);
+
+  const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
     setAccount(acc); setChainId(chId); setProvider(prov); showMsg('','info');
+    if (chId === BASE_SEPOLIA_CHAIN_ID) checkEntry(prov, acc);
   };
 
   useEffect(() => {
@@ -57,6 +73,7 @@ export default function Play() {
 
   const submitDraft = async () => {
     if (!account) return showMsg('Connect wallet','error');
+    if (!hasEntered) return showMsg('Enter tournament first (0.001 ETH)','error');
     const order = getOrder();
     const picks = order.map(s => ({ symbol: s, direction: selectedTokens.get(s)! }));
     if (picks.length !== 3) return showMsg('Select 3 tokens','error');
@@ -84,12 +101,14 @@ export default function Play() {
         tx = await c.enter(TOURNAMENT_ID, { value: ethers.parseEther('0.001'), gasLimit: 150000 });
       showMsg('Confirm in wallet (Base Sepolia)...','info');
       await tx.wait();
+      setHasEntered(true);
       showMsg('Entered! Now submit draft.','success');
     } catch (e: any) { showMsg(e.reason||e.message||'Tx failed','error'); }
     setLoading(false);
   };
 
   const order = getOrder();
+  const canDraft = account && isCorrectChain && hasEntered && selectedTokens.size === 3;
 
   return (
     <div className="relative min-h-screen"><CodeRain/>
@@ -98,6 +117,14 @@ export default function Play() {
       <p className="text-xs text-[#4D804D] font-mono mt-1">SELECT 3 • CAPTAIN • ENTER</p></div>
       <div className="flex justify-center"><WalletButton account={account} chainId={chainId} provider={provider} onConnect={connect} onError={m=>showMsg(m,'error')}/></div>
       {message&&<div className={`p-3 rounded border text-sm font-mono text-center ${messageType==='error'?'border-[#FF1A40] bg-[#1A0A0A] text-[#FF1A40]':messageType==='success'?'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]':'border-[#1A3A1A] bg-[#0D0D0D] text-[#B3FFB3]'}`}>{message}<button onClick={()=>setMessage('')} className="ml-3 text-[#4D804D]">✕</button></div>}
+      
+      {/* Entry status indicator */}
+      {account && isCorrectChain && (
+        <div className={`p-2 rounded border text-xs font-mono text-center ${hasEntered ? 'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]' : checkingEntry ? 'border-[#1A3A1A] bg-[#0D0D0D] text-[#4D804D]' : 'border-[#FF1A40]/30 bg-[#1A0A0A] text-[#FF1A40]'}`}>
+          {checkingEntry ? 'CHECKING ENTRY...' : hasEntered ? '◆ ENTERED — READY TO DRAFT' : '◇ NOT ENTERED — DEPOSIT 0.001 ETH FIRST'}
+        </div>
+      )}
+
       <div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D] text-sm font-mono text-center"><span className="text-[#4D804D]">BENCHMARK: </span><span className="text-[#FFD700] font-bold">{benchmark}</span><span className="text-[#4D804D]"> @ $</span><span className="text-[#B3FFB3]">{prices[benchmark]?.toLocaleString()||'...'}</span></div>
       {selectedTokens.size>0&&<div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D] text-sm font-mono text-center"><span className="text-[#4D804D]">CAPTAIN ({captainMultiplier}x): </span><span className="text-[#FFD700] font-bold">{order[captainIndex]||'...'}</span></div>}
       <div className="flex justify-between items-center"><span className="text-xs font-mono text-[#4D804D] uppercase tracking-wider">▸ Available Tokens</span><span className={`text-xs font-mono font-bold ${selectedTokens.size===3?'text-[#00FF41]':'text-[#4D804D]'}`}>{selectedTokens.size}/3</span></div>
@@ -106,9 +133,12 @@ export default function Play() {
       </div>
       <div className="p-3 rounded border border-[#1A3A1A] bg-[#0D0D0D]"><label className="text-[10px] text-[#4D804D] font-mono block mb-1 uppercase tracking-wider">Referral (15%)</label><input type="text" value={referrer} onChange={e=>setReferrer(e.target.value)} placeholder="0x..." className="w-full px-3 py-1.5 rounded bg-[#0A0A0A] border border-[#1A3A1A] text-sm text-[#B3FFB3] font-mono focus:border-[#00FF41] focus:outline-none"/></div>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <NeonButton onClick={enterTournament} disabled={!account || !isCorrectChain} loading={loading}>ENTER (0.001 ETH)</NeonButton>
-        <NeonButton onClick={submitDraft} disabled={!account||selectedTokens.size!==3} loading={loading} variant="gold">SUBMIT DRAFT</NeonButton>
+        <NeonButton onClick={enterTournament} disabled={!account || !isCorrectChain || hasEntered} loading={loading}>ENTER (0.001 ETH)</NeonButton>
+        <NeonButton onClick={submitDraft} disabled={!canDraft} loading={loading} variant="gold">SUBMIT DRAFT</NeonButton>
       </div>
+      {account && isCorrectChain && !hasEntered && (
+        <p className="text-center text-[10px] text-[#FF1A40] font-mono animate-pulse">⚠ ENTER TOURNAMENT BEFORE SUBMITTING DRAFT</p>
+      )}
       <p className="text-center text-[10px] text-[#4D804D] font-mono">1: ENTER (gas+0.001 ETH) • 2: DRAFT (free)</p>
     </div></div>
   );

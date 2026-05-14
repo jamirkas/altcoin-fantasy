@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOURNAMENT_ID = 0;
-const BASE_SEPOLIA_CHAIN_ID = '0x14A34';
+const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 interface LeaderboardEntryType {
   player: string; score: number; captain_index: number;
@@ -19,7 +19,7 @@ interface LeaderboardEntryType {
 
 export default function Arena() {
   const [account, setAccount] = useState('');
-  const [chainId, setChainId] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [tournament, setTournament] = useState<any>(null);
   const [loadingContract, setLoadingContract] = useState(false);
@@ -30,7 +30,7 @@ export default function Arena() {
 
   const isCorrectChain = chainId === BASE_SEPOLIA_CHAIN_ID;
 
-  const connect = (acc: string, chId: string, prov: ethers.BrowserProvider) => {
+  const connect = (acc: string, chId: number, prov: ethers.BrowserProvider) => {
     setAccount(acc); setChainId(chId); setProvider(prov); setMessage('');
   };
 
@@ -118,7 +118,7 @@ export default function Arena() {
           </div>
         )}
 
-        {/* Status area — what to show when no tournament data */}
+        {/* Status area */}
         {!tournament && (
           <div className="text-center py-10">
             {!account ? (
