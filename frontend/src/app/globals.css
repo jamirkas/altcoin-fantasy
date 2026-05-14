@@ -48,7 +48,7 @@ body {
   cursor: default;
 }
 
-/* ─── Scanlines (v2 — sharper, with flicker) ─── */
+/* ─── Scanlines (Tesla edition — softer, barely visible) ─── */
 .scanlines::after {
   content: '';
   position: fixed;
@@ -58,15 +58,14 @@ body {
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 255, 65, 0.015) 2px,
-    rgba(0, 255, 65, 0.015) 4px
+    transparent 3px,
+    rgba(0, 255, 65, 0.008) 3px,
+    rgba(0, 255, 65, 0.008) 6px
   );
-  animation: scanline-drift 8s linear infinite;
 }
 @keyframes scanline-drift {
   0% { transform: translateY(0); }
-  100% { transform: translateY(4px); }
+  100% { transform: translateY(6px); }
 }
 
 /* ─── Vignette ─── */
@@ -143,61 +142,41 @@ body {
   text-transform: uppercase;
 }
 
-/* ─── Neon Glow Boxes ─── */
+/* ─── Neon Glow Boxes (Tesla edition — softer) ─── */
 .neon-box {
-  box-shadow:
-    0 0 10px rgba(0, 255, 65, 0.1),
-    inset 0 0 10px rgba(0, 255, 65, 0.03);
-  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.06), inset 0 0 8px rgba(0, 255, 65, 0.02);
+  transition: all 0.4s ease;
 }
 .neon-box:hover {
-  box-shadow:
-    0 0 25px rgba(0, 255, 65, 0.25),
-    0 0 50px rgba(0, 255, 65, 0.1),
-    inset 0 0 15px rgba(0, 255, 65, 0.05);
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.15), 0 0 35px rgba(0, 255, 65, 0.05), inset 0 0 10px rgba(0, 255, 65, 0.03);
 }
 .neon-box-red {
-  box-shadow:
-    0 0 10px rgba(255, 26, 64, 0.1),
-    inset 0 0 10px rgba(255, 26, 64, 0.03);
+  box-shadow: 0 0 8px rgba(255, 26, 64, 0.06), inset 0 0 8px rgba(255, 26, 64, 0.02);
 }
 .neon-box-red:hover {
-  box-shadow:
-    0 0 25px rgba(255, 26, 64, 0.25),
-    0 0 50px rgba(255, 26, 64, 0.1);
+  box-shadow: 0 0 18px rgba(255, 26, 64, 0.15), 0 0 35px rgba(255, 26, 64, 0.05);
 }
 .neon-box-gold {
-  box-shadow:
-    0 0 15px rgba(255, 215, 0, 0.15),
-    inset 0 0 10px rgba(255, 215, 0, 0.05);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.08), inset 0 0 8px rgba(255, 215, 0, 0.03);
 }
 .neon-box-gold:hover {
-  box-shadow:
-    0 0 30px rgba(255, 215, 0, 0.3),
-    0 0 60px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 22px rgba(255, 215, 0, 0.2), 0 0 40px rgba(255, 215, 0, 0.06);
 }
 .neon-box-cyan {
-  box-shadow:
-    0 0 15px rgba(0, 229, 255, 0.15),
-    inset 0 0 10px rgba(0, 229, 255, 0.03);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.08), inset 0 0 8px rgba(0, 229, 255, 0.02);
 }
 
-/* ─── Glass Panel ─── */
+/* ─── Glass Panel (Tesla edition — lighter) ─── */
 .glass-panel {
-  background: rgba(10, 10, 15, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 255, 65, 0.12);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: rgba(10, 10, 15, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 255, 65, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 .glass-panel:hover {
-  border-color: rgba(0, 255, 65, 0.25);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 65, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 255, 65, 0.15);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 255, 65, 0.05);
 }
 
 /* ─── Animated Gradient Border ─── */
@@ -248,16 +227,16 @@ body {
   border-width: 0 2px 2px 0;
 }
 
-/* ─── Neon Pulse ─── */
+/* ─── Neon Pulse (Tesla — slower, gentler) ─── */
 @keyframes neon-pulse {
-  0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 65, 0.2); }
-  50% { box-shadow: 0 0 35px rgba(0, 255, 65, 0.5); }
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 65, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 65, 0.25); }
 }
 .neon-pulse {
-  animation: neon-pulse 2s ease-in-out infinite;
+  animation: neon-pulse 3s ease-in-out infinite;
 }
 
-/* ─── Data Stream Border ─── */
+/* ─── Data Stream Border (Tesla — thinner) ─── */
 @keyframes data-stream {
   0% { background-position: 0% 0%; }
   100% { background-position: 200% 0%; }
@@ -269,7 +248,7 @@ body {
   content: '';
   position: absolute;
   bottom: -1px; left: 0; right: 0;
-  height: 2px;
+  height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -279,8 +258,8 @@ body {
     transparent 100%
   );
   background-size: 200% 100%;
-  animation: data-stream 3s linear infinite;
-  opacity: 0.6;
+  animation: data-stream 4s linear infinite;
+  opacity: 0.4;
 }
 
 /* ─── Terminal Cursor ─── */
@@ -295,39 +274,37 @@ body {
   margin-left: 2px;
 }
 
-/* ─── Buttons ─── */
+/* ─── Buttons (Tesla edition — rounder, cleaner) ─── */
 .btn-neon {
   font-family: 'Share Tech Mono', monospace;
   position: relative;
   border: 1px solid var(--matrix-green);
   color: var(--matrix-green);
-  background: rgba(0, 255, 65, 0.05);
+  background: rgba(0, 255, 65, 0.04);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: all 0.25s;
+  letter-spacing: 0.12em;
+  border-radius: 6px;
+  transition: all 0.35s ease;
   overflow: hidden;
 }
 .btn-neon:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.97);
   transition: transform 0.1s;
 }
 .btn-neon::before {
   content: '[ ';
+  font-size: 0.85em;
+  opacity: 0.5;
 }
 .btn-neon::after {
   content: ' ]';
+  font-size: 0.85em;
+  opacity: 0.5;
 }
 .btn-neon:hover:not(:disabled) {
-  background: rgba(0, 255, 65, 0.12);
-  box-shadow:
-    0 0 25px rgba(0, 255, 65, 0.4),
-    0 0 50px rgba(0, 255, 65, 0.15);
-  transform: translateY(-1px);
+  background: rgba(0, 255, 65, 0.08);
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.2), 0 0 35px rgba(0, 255, 65, 0.06);
   cursor: pointer;
-}
-.btn-neon:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
 }
 .btn-neon:disabled {
   opacity: 0.25;
@@ -501,29 +478,18 @@ body {
   animation: scan 2.5s ease-in-out infinite;
 }
 
-/* ─── Futuristic button ─── */
+/* ─── Futuristic button (Tesla edition) ─── */
 .futuristic-btn {
-  border-image: linear-gradient(
-    135deg,
-    var(--matrix-green),
-    var(--matrix-cyan),
-    var(--matrix-green)
-  ) 1;
-  box-shadow:
-    0 0 15px rgba(0, 255, 65, 0.15),
-    inset 0 0 15px rgba(0, 255, 65, 0.03);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  border-radius: 8px;
+  background: rgba(0, 255, 65, 0.03);
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.06), inset 0 0 12px rgba(0, 255, 65, 0.02);
+  transition: all 0.4s ease;
 }
 .futuristic-btn:hover:not(:disabled) {
-  border-image: linear-gradient(
-    135deg,
-    var(--matrix-cyan),
-    var(--matrix-green),
-    var(--matrix-purple)
-  ) 1;
-  box-shadow:
-    0 0 30px rgba(0, 255, 65, 0.3),
-    0 0 60px rgba(0, 229, 255, 0.15),
-    inset 0 0 20px rgba(0, 255, 65, 0.08);
+  border-color: rgba(0, 229, 255, 0.5);
+  background: rgba(0, 255, 65, 0.06);
+  box-shadow: 0 0 25px rgba(0, 255, 65, 0.15), 0 0 50px rgba(0, 229, 255, 0.06), inset 0 0 15px rgba(0, 255, 65, 0.04);
   transform: translateY(-1px);
 }
 
