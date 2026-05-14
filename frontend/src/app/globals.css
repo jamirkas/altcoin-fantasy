@@ -566,3 +566,12 @@ body {
 .energy-pulse {
   animation: energy-pulse 2s ease-out infinite;
 }
+
+/* ─── Toast notification ─── */
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.animate-toast-in {
+  animation: toast-in 0.35s ease-out;
+}

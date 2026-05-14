@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS as DEPLOYED_ADDRESS, CONTRACT_ABI } from '@/app/contract';
 import { useWallet, checkPlayerEntry } from '@/components/WalletContext';
+import { useToast } from '@/components/Toast';
 import TokenCard from '@/components/TokenCard';
 import NeonButton from '@/components/NeonButton';
 import WalletButton from '@/components/WalletButton';
@@ -27,7 +28,7 @@ export default function Play() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'info'|'error'|'success'>('info');
-  const [flowMessage, setFlowMessage] = useState(''); // message near buttons bottom
+  const { toast } = useToast();
 
   const showMsg = (msg: string, type: 'info'|'error'|'success'='info') => { setMessage(msg); setMessageType(type); };
 
@@ -60,29 +61,29 @@ export default function Play() {
   const makeCaptain = (s: string) => { const i = getOrder().indexOf(s); if (i>=0) setCaptainIndex(i); };
 
   const submitDraft = async () => {
-    if (!account) return showFlow('Connect wallet first', 'error');
-    if (!hasEntered) return showFlow('Pay 0.001 ETH to enter first', 'error');
+    if (!account) return toast('Connect wallet first', 'error');
+    if (!hasEntered) return toast('Pay 0.001 ETH to enter first', 'error');
     const order = getOrder();
     const picks = order.map(s => ({ symbol: s, direction: selectedTokens.get(s)! }));
-    if (picks.length !== 3) return showFlow('Select exactly 3 tokens', 'error');
+    if (picks.length !== 3) return toast('Select exactly 3 tokens', 'error');
     setLoading(true);
     try {
       const r = await fetch(`${API_URL}/draft`, { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ tournament_id: TOURNAMENT_ID, player: account, picks, captain_index: captainIndex }) });
       if (r.ok) {
         const d = await r.json();
-        showFlow(`◆ Draft submitted! Captain: ${order[d.captain_index]} (${captainMultiplier}x)`, 'success');
+        toast(`Draft submitted — Captain: ${order[d.captain_index]} (${captainMultiplier}x)`, 'success');
       } else {
         const e = await r.json();
-        showFlow(e.detail||'Draft failed', 'error');
+        toast(e.detail||'Draft failed', 'error');
       }
-    } catch { showFlow('API error — try again', 'error'); }
+    } catch { toast('API error — try again', 'error'); }
     setLoading(false);
   };
 
   const enterTournament = async () => {
-    if (!provider || !account) return showFlow('Connect wallet', 'error');
-    if (!isCorrectChain) return showFlow('Switch to Base Sepolia in wallet', 'error');
+    if (!provider || !account) return toast('Connect wallet', 'error');
+    if (!isCorrectChain) return toast('Switch to Base Sepolia in wallet', 'error');
     setLoading(true);
     try {
       const signer = await provider.getSigner();
@@ -92,18 +93,12 @@ export default function Play() {
         tx = await c.enterWithReferral(TOURNAMENT_ID, referrer, captainIndex, { value: ethers.parseEther('0.001'), gasLimit: 150000 });
       else
         tx = await c.enter(TOURNAMENT_ID, { value: ethers.parseEther('0.001'), gasLimit: 150000 });
-      showFlow('Confirm transaction in wallet...', 'info');
+      toast('Confirm transaction in wallet...', 'info');
       await tx.wait();
       setHasEntered(true);
-      showFlow('◆ Paid 0.001 ETH — now submit your draft below!', 'success');
-    } catch (e: any) { showFlow(e.reason||e.message||'Transaction failed', 'error'); }
+      toast('Paid 0.001 ETH — now submit your draft', 'success');
+    } catch (e: any) { toast(e.reason||e.message||'Transaction failed', 'error'); }
     setLoading(false);
-  };
-
-  const showFlow = (msg: string, type: 'info'|'error'|'success') => {
-    setFlowMessage(msg);
-    // Auto-dismiss success after 5s
-    if (type === 'success') setTimeout(() => setFlowMessage(''), 6000);
   };
 
   const order = getOrder();
@@ -173,20 +168,8 @@ export default function Play() {
           <input type="text" value={referrer} onChange={e=>setReferrer(e.target.value)} placeholder="0x..." className="w-full px-3 py-2 rounded bg-[#0A0A0F] border border-[#1A2A1A] text-sm text-[#C0FFC0] font-mono focus:border-[#00E5FF] focus:outline-none focus:shadow-[0_0_10px_rgba(0,229,255,0.15)] placeholder-[#2A3A2A] transition-all"/>
         </HudFrame>
 
-        {/* ─── ACTION AREA (buttons + flow message) ─── */}
+        {/* ─── ACTION AREA (buttons) ─── */}
         <div className="space-y-3">
-          {/* Flow message — appears right above buttons */}
-          {flowMessage && (
-            <div className={`p-3 rounded border text-sm font-mono text-center animate-fade-in-up ${
-              flowMessage.startsWith('◆') ? 'border-[#00FF41] bg-[#0A1A0A] text-[#00FF41]' :
-              flowMessage.startsWith('Confirm') ? 'border-[#00E5FF]/30 bg-[#0A1A1A] text-[#00E5FF]' :
-              'border-[#FF1A40] bg-[#1A0A0A] text-[#FF1A40]'
-            }`}>
-              {flowMessage}
-              <button onClick={() => setFlowMessage('')} className="ml-3 text-[#4D754D] hover:text-[#00FF41] transition-colors">✕</button>
-            </div>
-          )}
-
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {/* Enter button */}
             <NeonButton

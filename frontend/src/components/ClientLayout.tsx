@@ -3,10 +3,12 @@ import Link from "next/link";
 import CyberBackground from "@/components/CyberBackground";
 import CodeRain from "@/components/CodeRain";
 import { WalletProvider } from "@/components/WalletContext";
+import { ToastProvider } from "@/components/Toast";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <WalletProvider>
+    <ToastProvider>
       <CyberBackground />
       <CodeRain />
 
@@ -57,6 +59,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </p>
         <p className="text-[8px] text-[#2A3A2A] font-mono mt-1">SYS.ONLINE // NODES: 12 // LAT: 0.04ms</p>
       </footer>
+    </ToastProvider>
     </WalletProvider>
   );
 }
