@@ -61,9 +61,9 @@ export default function Landing() {
             ALTCOIN_FANTASY
           </span>
           <div className="flex items-center gap-4 text-xs font-mono tracking-wider">
-            <span className="text-[#4D754D] hover:text-[#00FF41] cursor-pointer transition-colors">ABOUT</span>
+            <a href="/arena" className="text-[#4D754D] hover:text-[#00FF41] transition-colors">ARENA</a>
+            <a href="/garage" className="text-[#4D754D] hover:text-[#00FF41] transition-colors">GARAGE</a>
             <a href="https://x.com/altfantasy_" target="_blank" rel="noopener" className="text-[#4D754D] hover:text-[#00E5FF] transition-colors">𝕏 TWITTER</a>
-            <span className="px-3 py-1.5 rounded border border-[#FFD700]/30 text-[#FFD700] opacity-60 cursor-not-allowed text-[10px]">APP SOON</span>
           </div>
         </div>
       </nav>
