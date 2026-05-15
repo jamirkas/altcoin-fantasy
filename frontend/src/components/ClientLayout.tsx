@@ -29,8 +29,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <nav className="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-[#1A2A1A]/50">
             <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2 group">
-                <span className="matrix-text text-lg font-bold tracking-wider glitch" data-text="ALTCOIN_FANTASY">
-                  ALTCOIN_FANTASY
+                <span className="matrix-text text-lg font-bold tracking-wider glitch" data-text="MECH_LEAGUE">
+                  MECH_LEAGUE
                 </span>
                 <span className="text-[10px] text-[#4D754D] hidden sm:inline font-mono">// v2.0</span>
               </Link>

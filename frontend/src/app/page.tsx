@@ -57,13 +57,13 @@ export default function Landing() {
       {/* Nav */}
       <nav className="relative z-50 border-b border-[#1A2A1A]/30 backdrop-blur-md bg-[#020205]/80">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-xl font-bold tracking-[0.2em] glitch" style={{ color: '#00FF41', fontFamily: "'Orbitron', sans-serif" }} data-text="ALTCOIN_FANTASY">
-            ALTCOIN_FANTASY
+          <span className="text-xl font-bold tracking-[0.2em] glitch" style={{ color: '#00FF41', fontFamily: "'Orbitron', sans-serif" }} data-text="MECH_LEAGUE">
+            MECH LEAGUE
           </span>
           <div className="flex items-center gap-4 text-xs font-mono tracking-wider">
             <a href="/arena" className="text-[#4D754D] hover:text-[#00FF41] transition-colors">ARENA</a>
             <a href="/garage" className="text-[#4D754D] hover:text-[#00FF41] transition-colors">GARAGE</a>
-            <a href="https://x.com/altfantasy_" target="_blank" rel="noopener" className="text-[#4D754D] hover:text-[#00E5FF] transition-colors">𝕏 TWITTER</a>
+            <a href="https://x.com/firstMechLeague" target="_blank" rel="noopener" className="text-[#4D754D] hover:text-[#00E5FF] transition-colors">𝕏 TWITTER</a>
           </div>
         </div>
       </nav>
@@ -91,7 +91,7 @@ export default function Landing() {
             <span className="px-5 py-3 rounded font-mono text-sm tracking-[0.2em] uppercase bg-[#00FF41]/10 border border-[#00FF41]/40 text-[#00FF41] cursor-not-allowed opacity-80">
               ◈ JOIN THE WAITLIST
             </span>
-            <a href="https://x.com/altfantasy_" target="_blank" rel="noopener"
+            <a href="https://x.com/firstMechLeague" target="_blank" rel="noopener"
               className="px-5 py-3 rounded font-mono text-sm tracking-[0.2em] uppercase bg-[#1A9DFF]/10 border border-[#1A9DFF]/40 text-[#1A9DFF] hover:bg-[#1A9DFF]/20 transition-all">
               𝕏 FOLLOW
             </a>
@@ -140,10 +140,10 @@ export default function Landing() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-[#1A2A1A]/30 bg-[#020205] py-6 px-6 text-center">
         <p className="text-[10px] text-[#4D754D] font-mono tracking-wider">
-          ALTCOIN FANTASY • ON BASE • 2026
+          MECH LEAGUE • ON BASE • 2026
         </p>
         <div className="flex justify-center gap-4 mt-2">
-          <a href="https://x.com/altfantasy_" target="_blank" rel="noopener" className="text-[10px] text-[#2A3A2A] hover:text-[#00E5FF] font-mono transition-colors">𝕏 Twitter</a>
+          <a href="https://x.com/firstMechLeague" target="_blank" rel="noopener" className="text-[10px] text-[#2A3A2A] hover:text-[#00E5FF] font-mono transition-colors">𝕏 Twitter</a>
           <span className="text-[10px] text-[#2A3A2A] font-mono">|</span>
           <span className="text-[10px] text-[#2A3A2A] font-mono">Contract: 0x4133...B81e80</span>
         </div>

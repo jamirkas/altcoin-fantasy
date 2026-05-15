@@ -3,8 +3,8 @@ import "./globals.css";
 import ClientLayout from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
-  title: "Altcoin Fantasy — Beat the Benchmark",
-  description: "Weekly crypto fantasy league. Draft altcoins, beat Bitcoin, win prizes.",
+  title: "MechLeague — On-chain Mech Battler",
+  description: "Build AI mechs, challenge players, climb the leaderboard. Token prices modulate ability strength. On-chain fantasy league on Base.",
   icons: { icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🏆</text></svg>" },
 };
 

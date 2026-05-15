@@ -64,8 +64,8 @@ export default function Arena() {
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 space-y-8">
         {/* Hero */}
         <div className="text-center space-y-3 py-6 animate-fade-in-up">
-          <h1 className="text-4xl sm:text-6xl font-bold matrix-text glitch tracking-[0.15em]" data-text="ALTCOIN_FANTASY">
-            ALTCOIN_FANTASY
+          <h1 className="text-4xl sm:text-6xl font-bold matrix-text glitch tracking-[0.15em]" data-text="MECH_LEAGUE">
+            MECH_LEAGUE
           </h1>
           <p className="text-sm text-[#4D754D] font-mono tracking-[0.2em] uppercase">
             <span className="text-[#00FF41]">▸</span> DRAFT ALTS <span className="text-[#2A3A2A]">//</span> BEAT {benchmark} <span className="text-[#2A3A2A]">//</span> CLAIM ETH <span className="text-[#00FF41]">◂</span>
