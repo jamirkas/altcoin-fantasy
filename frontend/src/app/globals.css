@@ -664,3 +664,32 @@ body {
   0%, 100% { box-shadow: 0 0 12px currentColor; }
   50% { box-shadow: 0 0 22px currentColor, 0 0 40px currentColor; }
 }
+
+/* ─── Battle arena animations ─── */
+@keyframes shakeLeft {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-8px); }
+  20% { transform: translateX(6px); }
+  30% { transform: translateX(-4px); }
+  40% { transform: translateX(2px); }
+}
+@keyframes shakeRight {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(8px); }
+  20% { transform: translateX(-6px); }
+  30% { transform: translateX(4px); }
+  40% { transform: translateX(-2px); }
+}
+.animate-shake-left {
+  animation: shakeLeft 0.4s ease-out;
+}
+.animate-shake-right {
+  animation: shakeRight 0.4s ease-out;
+}
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+}
+.animate-float-up {
+  animation: floatUp 1.5s ease-out forwards;
+}

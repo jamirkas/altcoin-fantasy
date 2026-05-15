@@ -2,6 +2,17 @@
 import { useState, useEffect } from 'react';
 import HudFrame from '@/components/HudFrame';
 import MechArt from '@/components/MechArt';
+import MechBattle from '@/components/MechBattle';
+
+// ─── Ability descriptions per slot ───
+const ABILITIES: Record<string, { name: string; icon: string; desc: string }> = {
+  head: { name: 'MIND HACK', icon: '🧠', desc: 'Steals enemy ability power' },
+  armor: { name: 'FORTIFY', icon: '🛡️', desc: 'Grants HP shield, blocks crits' },
+  weapon: { name: 'STRIKE', icon: '⚔️', desc: 'Direct damage, crit chance' },
+  secondary: { name: 'DISRUPT', icon: '🔫', desc: 'Disables random enemy ability' },
+  legs: { name: 'EVADE', icon: '🦿', desc: 'Chance to dodge next attack' },
+  boosters: { name: 'OVERDRIVE', icon: '🚀', desc: 'All abilities recharge faster' },
+};
 
 // ─── Token definitions for the garage ───
 interface TokenDef {
@@ -61,6 +72,33 @@ export default function Garage() {
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [deployed, setDeployed] = useState(false);
   const [stats, setStats] = useState<{ winRate: number; sharpe: number; tier: string } | null>(null);
+  const [battling, setBattling] = useState(false);
+  const [battleResult, setBattleResult] = useState<any>(null);
+  const [battleError, setBattleError] = useState('');
+
+  // Fight handler
+  const startBattle = async () => {
+    setBattling(true);
+    setBattleError('');
+    try {
+      const myTokens = Object.values(build).map(t => TOKENS.findIndex(tk => tk.id === t));
+      const enemyTokens = [0, 4, 1, 2, 3, 0]; // Random AI mech
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/battle/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mechA_id: 1, mechA_tokens: myTokens, mechA_captain: 2,
+          mechB_id: 99, mechB_tokens: enemyTokens, mechB_captain: 1,
+        }),
+      });
+      if (!res.ok) throw new Error('Battle sim failed');
+      const data = await res.json();
+      setBattleResult(data);
+    } catch (e: any) {
+      setBattleError(e.message || 'Failed to start battle');
+      setBattling(false);
+    }
+  };
 
   // Fetch live prices from CoinGecko
   useEffect(() => {
@@ -254,26 +292,64 @@ export default function Garage() {
               </div>
             </HudFrame>
 
-            {/* Stats after deploy */}
+            {/* Stats + Abilities after deploy */}
             {deployed && stats && (
-              <HudFrame variant="gold" title={`MECH: ${mechName}`} subtitle="COMBAT READY" glowing>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <StatCard2 label="WIN RATE" value={`${stats.winRate}%`} color="#00FF41" />
-                  <StatCard2 label="SHARPE" value={stats.sharpe.toFixed(1)} color="#FFD700" />
-                  <StatCard2 label="TIER" value={stats.tier} color={armorToken.color} />
-                </div>
-                <div className="mt-3 pt-3 border-t border-[#1A2A1A] grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
-                  {SLOTS.map(s => {
-                    const t = getToken(build[s.id]);
-                    return (
-                      <div key={s.id} className="py-1.5 px-1 rounded bg-[#0A0A0F]" style={{ border: `1px solid ${t.color}20` }}>
-                        <p className="text-[7px] text-[#4D754D] font-mono">{s.label.split(' ')[0]}</p>
-                        <p className="text-[9px] font-mono font-bold" style={{ color: t.color }}>{t.symbol}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </HudFrame>
+              <>
+                <HudFrame variant="gold" title={`MECH: ${mechName}`} subtitle="COMBAT READY" glowing>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <StatCard2 label="WIN RATE" value={`${stats.winRate}%`} color="#00FF41" />
+                    <StatCard2 label="TIER" value={stats.tier} color="#FFD700" />
+                    <StatCard2 label="CAPTAIN" value={getToken(build[Object.keys(build)[2]]).symbol} color={getToken(build[Object.keys(build)[2]]).color} />
+                  </div>
+
+                  {/* Ability slots */}
+                  <div className="mt-3 pt-3 border-t border-[#1A2A1A]">
+                    <p className="text-[8px] text-[#4D754D] font-mono tracking-[0.2em] uppercase mb-2 text-center">⚡ ABILITIES</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
+                      {Object.entries(build).map(([slot, tokenId]) => {
+                        const t = getToken(tokenId);
+                        const ability = ABILITIES[slot];
+                        return (
+                          <div key={slot} className="py-1.5 px-1 rounded bg-[#0A0A0F] border group relative"
+                            style={{ borderColor: t.color + '20' }}>
+                            <span className="text-sm block">{ability?.icon}</span>
+                            <p className="text-[7px] text-[#4D754D] font-mono leading-tight">{ability?.name}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </HudFrame>
+
+                {/* FIGHT button */}
+                <button
+                  onClick={startBattle}
+                  disabled={battling}
+                  className="w-full py-4 rounded font-mono text-base tracking-[0.2em] uppercase transition-all duration-500 relative overflow-hidden border border-[#FF1A40] text-[#FF1A40] bg-[rgba(255,26,64,0.06)] hover:bg-[rgba(255,26,64,0.12)] hover:shadow-[0_0_40px_rgba(255,26,64,0.4)] cursor-pointer mt-3"
+                >
+                  {battling ? (
+                    <span className="relative z-10 animate-pulse">⚔ SIMULATING BATTLE...</span>
+                  ) : (
+                    <span className="relative z-10">⚔ FIGHT IN ARENA ⚔</span>
+                  )}
+                </button>
+
+                {battleError && (
+                  <p className="text-[10px] text-[#FF1A40] font-mono mt-2 text-center">{battleError}</p>
+                )}
+              </>
+            )}
+
+            {/* Battle overlay */}
+            {battleResult && (
+              <MechBattle
+                result={battleResult}
+                mechA_tokens={Object.values(build)}
+                mechB_tokens={['0','4','1','2','3','0']}
+                mechA_name={mechName}
+                mechB_name="AI CHALLENGER"
+                onClose={() => { setBattleResult(null); setBattling(false); }}
+              />
             )}
           </div>
         </div>

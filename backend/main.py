@@ -434,6 +434,119 @@ async def health():
     }
 
 
+# ═══════════════════════════════════════════
+# MechLeague v4: Battle Simulator Endpoints
+# ═══════════════════════════════════════════
+
+from simulator import simulate_battle, TOKENS
+
+# CoinGecko token IDs
+COINGECKO_IDS = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum", 
+    "SOL": "solana",
+    "LINK": "chainlink",
+    "AVAX": "avalanche-2",
+}
+
+
+@app.get("/prices")
+async def get_prices():
+    """Get token prices with 24h change % — powers ability modulation."""
+    try:
+        ids = ",".join(COINGECKO_IDS.values())
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": ids, "vs_currencies": "usd", "include_24hr_change": "true"}
+            )
+            if r.status_code != 200:
+                raise HTTPException(502, "CoinGecko unavailable")
+
+            data = r.json()
+            prices = {}
+            for symbol, cg_id in COINGECKO_IDS.items():
+                coin = data.get(cg_id, {})
+                prices[symbol] = {
+                    "usd": coin.get("usd", 0),
+                    "change_24h": round(coin.get("usd_24h_change", 0), 2),
+                }
+            return {"status": "ok", "prices": prices}
+    except Exception as e:
+        raise HTTPException(502, f"Price fetch failed: {e}")
+
+
+class BattleRequest(BaseModel):
+    mechA_id: int
+    mechA_tokens: list[int]  # 6 token IDs (0-4)
+    mechA_captain: int       # 0-5
+    mechB_id: int
+    mechB_tokens: list[int]
+    mechB_captain: int
+
+
+@app.post("/battle/simulate")
+async def simulate(req: BattleRequest):
+    """Simulate a battle between two mechs. Returns full event log for animation."""
+    # Validate inputs
+    if len(req.mechA_tokens) != 6 or len(req.mechB_tokens) != 6:
+        raise HTTPException(400, "Each mech needs exactly 6 token IDs")
+    if not (0 <= req.mechA_captain < 6) or not (0 <= req.mechB_captain < 6):
+        raise HTTPException(400, "Captain index must be 0-5")
+    for t in req.mechA_tokens + req.mechB_tokens:
+        if t not in TOKENS:
+            raise HTTPException(400, f"Unknown token ID: {t}")
+
+    # Get live prices for ability modulation
+    try:
+        price_data = await get_prices()
+        prices_24h = {s: d["change_24h"] for s, d in price_data["prices"].items()}
+    except:
+        # Fallback to flat prices if CoinGecko is down
+        prices_24h = {s: 0.0 for s in COINGECKO_IDS}
+
+    # Run simulation
+    result = simulate_battle(
+        mechA_id=req.mechA_id,
+        mechA_tokens=req.mechA_tokens,
+        mechA_captain=req.mechA_captain,
+        mechB_id=req.mechB_id,
+        mechB_tokens=req.mechB_tokens,
+        mechB_captain=req.mechB_captain,
+        prices=prices_24h,
+    )
+
+    return {
+        "winner": result.winner,
+        "mechA_hp_final": result.mechA_hp_final,
+        "mechB_hp_final": result.mechB_hp_final,
+        "mechA_max_hp": 500,
+        "mechB_max_hp": 500,
+        "events": [
+            {
+                "tick": e.tick,
+                "time": round(e.tick * 0.5, 1),
+                "actor": e.actor,
+                "slot": e.slot,
+                "ability_name": e.ability_name,
+                "icon": e.icon,
+                "damage": e.damage,
+                "shielded": e.shielded,
+                "dodged": e.dodged,
+                "crit": e.crit,
+                "effect": e.effect,
+                "mechA_hp": e.mechA_hp,
+                "mechB_hp": e.mechB_hp,
+            }
+            for e in result.events
+        ],
+        "mechA_powers": result.mechA_stats["powers"],
+        "mechB_powers": result.mechB_stats["powers"],
+        "seed": result.seed,
+        "prices_24h": prices_24h,
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
